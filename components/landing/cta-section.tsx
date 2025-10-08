@@ -27,7 +27,7 @@ export function CTASection() {
             size="lg"
             className="bg-gradient-to-r from-sky-500 to-sky-700 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-sky-500/30 transition-all"
           >
-            <Link href="#pricing">Get Started Now</Link>
+            <Link href="https://buy.stripe.com/6oU6oH81gd0h2dq2e7dnW07">Get Started Now</Link>
           </Button>
           <Button
             asChild
