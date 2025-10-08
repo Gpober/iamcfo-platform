@@ -68,7 +68,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="mx-auto h-12 w-auto flex items-center justify-center">
-            <img src="/lib/logo.png" alt="I AM CFO" className="h-12" />
+            <img src="/images/logo.png" alt="I AM CFO" className="h-12" />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Welcome back

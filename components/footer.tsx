@@ -30,7 +30,7 @@ export function Footer() {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <img 
-              src="/lib/logo.png" 
+              src="/images/logo.png"
               alt="I AM CFO" 
               className="h-10 w-auto mb-4 brightness-0 invert"
             />

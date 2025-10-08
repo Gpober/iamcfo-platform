@@ -29,7 +29,7 @@ export function DemoSection() {
   ]
 
   return (
-    <section id="demo" className="py-20 bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+    <section id="demo" className="py-20 bg-gradient-to-b from-[#123B72] via-[#0F3465] to-[#0B2B55] text-white">
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -45,8 +45,8 @@ export function DemoSection() {
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             {/* Video */}
             <div className="order-2 lg:order-1">
-              <div className="relative rounded-xl overflow-hidden shadow-2xl border-4 border-slate-700">
-                <div className="aspect-video bg-slate-800">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-sky-900/40 border border-[#1D4F8C] bg-[#0E2F58]/40 backdrop-blur">
+                <div className="aspect-video bg-[#0B2543]/80">
                   <iframe
                     width="100%"
                     height="100%"
@@ -59,7 +59,7 @@ export function DemoSection() {
                   />
                 </div>
               </div>
-              <p className="text-center text-slate-400 mt-4 text-sm">
+              <p className="text-center text-slate-300 mt-4 text-sm">
                 <Play className="inline w-4 h-4 mr-1" />
                 2-minute walkthrough of your future dashboard
               </p>
@@ -68,16 +68,16 @@ export function DemoSection() {
             {/* Features */}
             <div className="order-1 lg:order-2 space-y-4">
               {features.map((feature, idx) => (
-                <Card key={idx} className="bg-slate-800/50 border-slate-700 backdrop-blur">
+                <Card key={idx} className="bg-white/10 border border-white/10 backdrop-blur">
                   <CardContent className="p-4 flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                      <feature.icon className="w-5 h-5 text-blue-400" />
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#1B75D1]/20 rounded-lg flex items-center justify-center">
+                      <feature.icon className="w-5 h-5 text-[#4FC4FF]" />
                     </div>
                     <div>
                       <h3 className="font-bold text-white mb-1">
                         {feature.title}
                       </h3>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-sm text-slate-200/80">
                         {feature.description}
                       </p>
                     </div>
@@ -89,7 +89,7 @@ export function DemoSection() {
                 <Button
                   asChild
                   size="lg"
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:shadow-xl hover:scale-105 transition-all"
+                  className="w-full bg-gradient-to-r from-[#1B75D1] to-[#1590F9] text-white hover:shadow-xl hover:shadow-sky-500/30 hover:scale-105 transition-all"
                 >
                   <a href="https://calendly.com/gpober/30min" target="_blank" rel="noopener">
                     Book Your Free Demo
@@ -100,9 +100,9 @@ export function DemoSection() {
           </div>
 
           {/* Secret Weapon Callout */}
-          <div className="mt-12 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-xl p-8 backdrop-blur">
+          <div className="mt-12 bg-gradient-to-r from-[#1B75D1]/20 via-[#4FC4FF]/20 to-[#8B5CF6]/20 border border-sky-400/40 rounded-xl p-8 backdrop-blur">
             <div className="text-center">
-              <p className="text-sm text-blue-300 font-semibold uppercase tracking-wider mb-2">
+              <p className="text-sm text-sky-200 font-semibold uppercase tracking-wider mb-2">
                 The Game-Changer
               </p>
               <h3 className="text-2xl font-bold text-white mb-3">
