@@ -36,16 +36,41 @@ export default function LoginPage() {
         return
       }
 
-      // Step 2: Check if user is admin (optional - only for admin panel access)
-      // We'll just check the email directly without querying users table
-      const adminEmails = ['gpober@iamcfo.com']
-      
-      if (adminEmails.includes(email)) {
-        // Admin user - redirect to admin panel
+      // Step 2: Get user's role and organization
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role, organizations(subdomain)')
+        .eq('id', authData.user.id)
+        .single()
+
+      if (userError) {
+        console.error('Error fetching user data:', userError)
+        // If can't fetch user data, check if admin by email
+        const adminEmails = ['gpober@iamcfo.com']
+        if (adminEmails.includes(email)) {
+          router.push('/admin')
+        } else {
+          setError('Unable to determine account type. Please contact support.')
+          setLoading(false)
+        }
+        return
+      }
+
+      const subdomain = (userData as any)?.organizations?.subdomain
+      const role = userData?.role
+
+      // Step 3: Redirect based on role
+      if (role === 'super_admin') {
+        // Super admin - go to admin panel
         router.push('/admin')
+      } else if (subdomain) {
+        // Regular user - redirect to their client dashboard
+        window.location.href = `https://${subdomain}.iamcfo.com/dashboard`
       } else {
-        // Regular user - redirect to dashboard
-        router.push('/dashboard')
+        // User has no organization - shouldn't happen, but handle it
+        setError('No organization found for your account. Please contact support.')
+        await supabase.auth.signOut()
+        setLoading(false)
       }
 
     } catch (err: any) {
