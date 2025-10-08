@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
 
@@ -22,11 +21,9 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Image 
+            <img 
               src="/lib/logo.png" 
               alt="I AM CFO" 
-              width={160}
-              height={48}
               className="h-12 w-auto"
             />
           </Link>
@@ -64,6 +61,7 @@ export function Header() {
           <button
             className="md:hidden p-2 text-slate-700 hover:text-blue-600"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (
               <X className="w-6 h-6" />
