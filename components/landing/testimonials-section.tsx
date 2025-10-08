@@ -104,6 +104,12 @@ export function TestimonialsSection() {
       </div>
     </section>
   )
+}d">SOC 2 Compliant</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
 }d">QuickBooks Certified Partner</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600">
