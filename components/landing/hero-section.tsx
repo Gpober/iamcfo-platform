@@ -53,7 +53,7 @@ export function HeroSection() {
               variant="outline"
               className="text-lg px-8 py-6 border-2 border-white text-white hover:bg-white/10 bg-transparent"
             >
-              <a href="https://calendly.com/your-link" target="_blank" rel="noopener">
+              <a href="https://calendly.com/gpober/30min" target="_blank" rel="noopener">
                 Book Free Demo
               </a>
             </Button>
