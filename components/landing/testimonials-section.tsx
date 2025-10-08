@@ -31,7 +31,7 @@ export function TestimonialsSection() {
   ]
 
   return (
-    <section className="py-20 bg-slate-50">
+    <section id="testimonials" className="py-20 bg-slate-50">
       <div className="container mx-auto px-4">
         {/* Stats Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto mb-16">
