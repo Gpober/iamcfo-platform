@@ -98,19 +98,7 @@ export function TestimonialsSection() {
             <div className="w-10 h-10 bg-blue-600 rounded flex items-center justify-center">
               <span className="text-white font-bold text-sm">QB</span>
             </div>
-            <span className="text-sm font-semibold">SOC 2 Compliant</span>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}d">SOC 2 Compliant</span>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}d">QuickBooks Certified Partner</span>
+            <span className="text-sm font-semibold">QuickBooks Certified Partner</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600">
             <div className="w-10 h-10 bg-green-600 rounded flex items-center justify-center">
@@ -122,4 +110,10 @@ export function TestimonialsSection() {
             <div className="w-10 h-10 bg-purple-600 rounded flex items-center justify-center">
               <span className="text-white font-bold text-sm">✓</span>
             </div>
-            <span className="text-sm font-semibol
+            <span className="text-sm font-semibold">SOC 2 Compliant</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
