@@ -24,9 +24,9 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-slate-900 text-white">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
+    <footer className="bg-[#0a0f1a] w-full m-0 pt-6 safe-bottom text-white">
+      <div className="container mx-auto px-4">
+        <div className="grid gap-8 border-b border-slate-800 pb-8 md:grid-cols-2 lg:grid-cols-5">
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <img 
@@ -111,7 +111,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-slate-800 pt-8">
+        <div className="pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-slate-400 text-sm">
               © {new Date().getFullYear()} I AM CFO. All rights reserved.

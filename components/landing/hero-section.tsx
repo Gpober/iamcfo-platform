@@ -13,7 +13,6 @@ export function HeroSection() {
           }}
         />
         <div className="absolute -top-32 -right-20 h-64 w-64 rounded-full bg-[#B7DAFF] blur-3xl opacity-40" />
-        <div className="absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-[#D4E8FF] blur-3xl opacity-70" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
