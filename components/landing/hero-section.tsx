@@ -45,7 +45,7 @@ export function HeroSection() {
               size="lg"
               className="text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all"
             >
-              <Link href="#pricing">Get Started - Save $299</Link>
+              <Link href="https://buy.stripe.com/6oU6oH81gd0h2dq2e7dnW07">Get Started - Save $299</Link>
             </Button>
             <Button
               asChild
