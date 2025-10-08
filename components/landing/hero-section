@@ -1,10 +1,9 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import Image from "next/image"
 
 export function HeroSection() {
   return (
-    <section className="relative pt-20 pb-32 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+    <section className="relative pt-32 pb-20 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -89,10 +88,26 @@ export function HeroSection() {
               Trusted by Growing Businesses
             </p>
             <div className="flex items-center justify-center gap-8 md:gap-12 flex-wrap opacity-60">
-              <Image src="/lib/client 1.png" alt="Client" width={120} height={40} className="h-10 w-auto grayscale hover:grayscale-0 transition-all" />
-              <Image src="/lib/client 2.png" alt="Client" width={120} height={40} className="h-10 w-auto grayscale hover:grayscale-0 transition-all" />
-              <Image src="/lib/client 3.png" alt="Client" width={120} height={40} className="h-10 w-auto grayscale hover:grayscale-0 transition-all" />
-              <Image src="/lib/client 4.png" alt="Client" width={120} height={40} className="h-10 w-auto grayscale hover:grayscale-0 transition-all" />
+              <img 
+                src="/lib/client 1.png" 
+                alt="Client Logo" 
+                className="h-10 w-auto grayscale hover:grayscale-0 transition-all"
+              />
+              <img 
+                src="/lib/client 2.png" 
+                alt="Client Logo" 
+                className="h-10 w-auto grayscale hover:grayscale-0 transition-all"
+              />
+              <img 
+                src="/lib/client 3.png" 
+                alt="Client Logo" 
+                className="h-10 w-auto grayscale hover:grayscale-0 transition-all"
+              />
+              <img 
+                src="/lib/client 4.png" 
+                alt="Client Logo" 
+                className="h-10 w-auto grayscale hover:grayscale-0 transition-all"
+              />
             </div>
           </div>
         </div>
