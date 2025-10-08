@@ -16,7 +16,7 @@ export function Header() {
   ]
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-sky-900/20 bg-gradient-to-br from-[#040b2b]/95 via-[#0a2f77]/90 to-[#1c6cfb]/85 backdrop-blur">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-sky-500/20 bg-gradient-to-br from-[#06153d]/95 via-[#1142d4]/92 to-[#4bd0ff]/88 backdrop-blur">
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -32,7 +32,7 @@ export function Header() {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-sky-100/80 hover:text-white font-medium transition-colors"
+                className="text-sky-50/80 hover:text-white font-medium transition-colors"
               >
                 {item.name}
               </a>
@@ -42,21 +42,21 @@ export function Header() {
               <Button
                 asChild
                 variant="ghost"
-                className="text-sky-100/80 hover:text-white"
+                className="text-sky-50/80 hover:text-white"
               >
                 <Link href="/login">Sign In</Link>
               </Button>
               <Button
                 asChild
-                className="bg-gradient-to-r from-[#1f6fff] to-[#33c9ff] text-white hover:shadow-lg"
+                className="bg-gradient-to-r from-[#2a82ff] to-[#5ae3ff] text-white hover:shadow-lg"
               >
-                <Link href="/login">Dashboard</Link>
+                <Link href="#pricing">Get Started</Link>
               </Button>
             </div>
           </div>
 
           <button
-            className="md:hidden p-2 text-sky-100/80 hover:text-white"
+            className="md:hidden p-2 text-sky-50/80 hover:text-white"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -78,11 +78,11 @@ export function Header() {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-2">
-                <Button asChild variant="outline" className="w-full border-sky-800/40 text-sky-100/80 hover:bg-sky-900/20">
+                <Button asChild variant="outline" className="w-full border-sky-500/40 text-sky-50/80 hover:bg-sky-900/10">
                   <Link href="/login">Sign In</Link>
                 </Button>
-                <Button asChild className="w-full bg-gradient-to-r from-[#1f6fff] to-[#33c9ff] text-white">
-                  <Link href="/login">Dashboard</Link>
+                <Button asChild className="w-full bg-gradient-to-r from-[#2a82ff] to-[#5ae3ff] text-white">
+                  <Link href="#pricing">Get Started</Link>
                 </Button>
               </div>
             </div>
