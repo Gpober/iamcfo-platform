@@ -91,7 +91,7 @@ export function DemoSection() {
                   size="lg"
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:shadow-xl hover:scale-105 transition-all"
                 >
-                  <a href="https://calendly.com/your-link" target="_blank" rel="noopener">
+                  <a href="https://calendly.com/gpober/30min" target="_blank" rel="noopener">
                     Book Your Free Demo
                   </a>
                 </Button>
