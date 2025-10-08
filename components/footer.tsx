@@ -41,14 +41,14 @@ export function Footer() {
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-slate-400">
                 <Mail className="w-5 h-5 text-blue-400" />
-                <a href="mailto:sales@iamcfo.com" className="hover:text-white transition-colors">
-                  sales@iamcfo.com
+                <a href="mailto:support@iamcfo.com" className="hover:text-white transition-colors">
+                  support@iamcfo.com
                 </a>
               </div>
               <div className="flex items-center gap-3 text-slate-400">
                 <Phone className="w-5 h-5 text-blue-400" />
                 <a href="tel:+1234567890" className="hover:text-white transition-colors">
-                  (123) 456-7890
+                  (954) 684-9011
                 </a>
               </div>
               <div className="flex items-center gap-3 text-slate-400">
