@@ -17,7 +17,7 @@ export function PricingSection() {
         "Monthly data refresh"
       ],
       cta: "Get Started",
-      href: "#signup", // Replace with actual Stripe link
+      href: "https://buy.stripe.com/8x200j4P4d0hg4gdWPdnW06",
       popular: false
     },
     {
@@ -34,7 +34,7 @@ export function PricingSection() {
         "Weekly data refresh"
       ],
       cta: "Get Started",
-      href: "#signup", // Replace with actual Stripe link
+      href: "https://buy.stripe.com/6oU6oH81gd0h2dq2e7dnW07",
       popular: true
     },
     {
@@ -51,7 +51,7 @@ export function PricingSection() {
         "Phone + Slack support"
       ],
       cta: "Get Started",
-      href: "#signup", // Replace with actual Stripe link
+      href: "https://buy.stripe.com/00wcN5chwf8p05i8CvdnW08",
       popular: false
     }
   ]
