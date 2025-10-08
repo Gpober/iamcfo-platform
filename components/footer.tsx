@@ -29,9 +29,9 @@ export function Footer() {
         <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-            <img 
-              src="/lib/logo.png" 
-              alt="I AM CFO" 
+            <img
+              src="/images/logo.png"
+              alt="I AM CFO"
               className="h-10 w-auto mb-4 brightness-0 invert"
             />
             <p className="text-slate-400 mb-6 max-w-sm">

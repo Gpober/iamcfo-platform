@@ -49,7 +49,7 @@ export default function OnboardingPage() {
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <img src="/lib/logo.png" alt="I AM CFO" className="h-12 mx-auto mb-6" />
+          <img src="/images/logo.png" alt="I AM CFO" className="h-12 mx-auto mb-6" />
           <h1 className="text-4xl font-extrabold text-gray-900 mb-4">
             Welcome to I AM CFO! 🎉
           </h1>
