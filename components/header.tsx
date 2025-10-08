@@ -16,7 +16,7 @@ export function Header() {
   ]
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-sky-100/70 bg-gradient-to-b from-[#f5faff]/95 to-white/95 backdrop-blur">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-sky-900/20 bg-gradient-to-br from-[#040b2b]/95 via-[#0a2f77]/90 to-[#1c6cfb]/85 backdrop-blur">
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -32,7 +32,7 @@ export function Header() {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-sky-900 hover:text-sky-600 font-medium transition-colors"
+                className="text-sky-100/80 hover:text-white font-medium transition-colors"
               >
                 {item.name}
               </a>
@@ -42,13 +42,13 @@ export function Header() {
               <Button
                 asChild
                 variant="ghost"
-                className="text-sky-900 hover:text-sky-600"
+                className="text-sky-100/80 hover:text-white"
               >
                 <Link href="/login">Sign In</Link>
               </Button>
               <Button
                 asChild
-                className="bg-gradient-to-r from-sky-500 to-sky-600 hover:shadow-lg"
+                className="bg-gradient-to-r from-[#1f6fff] to-[#33c9ff] text-white hover:shadow-lg"
               >
                 <Link href="/login">Dashboard</Link>
               </Button>
@@ -56,7 +56,7 @@ export function Header() {
           </div>
 
           <button
-            className="md:hidden p-2 text-sky-900 hover:text-sky-600"
+            className="md:hidden p-2 text-sky-100/80 hover:text-white"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -65,23 +65,23 @@ export function Header() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-sky-100">
+          <div className="md:hidden mt-4 pb-4 border-t border-sky-900/20">
             <div className="flex flex-col gap-4 pt-4">
               {navigation.map((item) => (
                 <a
                   key={item.name}
                   href={item.href}
-                  className="text-sky-900 hover:text-sky-600 font-medium px-2 py-2"
+                  className="text-sky-100/80 hover:text-white font-medium px-2 py-2"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-2">
-                <Button asChild variant="outline" className="w-full">
+                <Button asChild variant="outline" className="w-full border-sky-800/40 text-sky-100/80 hover:bg-sky-900/20">
                   <Link href="/login">Sign In</Link>
                 </Button>
-                <Button asChild className="w-full bg-gradient-to-r from-sky-500 to-sky-600">
+                <Button asChild className="w-full bg-gradient-to-r from-[#1f6fff] to-[#33c9ff] text-white">
                   <Link href="/login">Dashboard</Link>
                 </Button>
               </div>
