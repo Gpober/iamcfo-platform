@@ -64,8 +64,25 @@ export default function LoginPage() {
         // Super admin - go to admin panel
         router.push('/admin')
       } else if (subdomain) {
-        // Regular user - redirect to their client dashboard
-        window.location.href = `https://${subdomain}.iamcfo.com/dashboard`
+        // Get the session to pass it to the subdomain
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.access_token && session?.refresh_token) {
+          // Pass the session tokens as URL hash parameters
+          // This allows the client site to pick up the session
+          const params = new URLSearchParams({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at?.toString() || '',
+            token_type: 'bearer',
+          })
+          
+          // Redirect with session in URL hash
+          window.location.href = `https://${subdomain}.iamcfo.com/dashboard#${params.toString()}`
+        } else {
+          // Fallback if session tokens not available
+          window.location.href = `https://${subdomain}.iamcfo.com/dashboard`
+        }
       } else {
         // User has no organization - shouldn't happen, but handle it
         setError('No organization found for your account. Please contact support.')
