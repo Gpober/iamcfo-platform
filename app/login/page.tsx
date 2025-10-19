@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { authClient } from '@/lib/supabase/auth-client'  // ✅ Use auth client
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -18,8 +17,8 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Step 1: Sign in with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      // Step 1: Sign in with Platform/Auth Supabase
+      const { data: authData, error: authError } = await authClient.auth.signInWithPassword({
         email,
         password,
       })
@@ -36,8 +35,8 @@ export default function LoginPage() {
         return
       }
 
-      // Step 2: Get user's role and organization
-      const { data: userData, error: userError } = await supabase
+      // Step 2: Get user's role and organization from Platform Supabase
+      const { data: userData, error: userError } = await authClient
         .from('users')
         .select('role, organizations(subdomain)')
         .eq('id', authData.user.id)
@@ -46,7 +45,7 @@ export default function LoginPage() {
       if (userError) {
         console.error('Error fetching user data:', userError)
         // If can't fetch user data, check if admin by email
-        const adminEmails = ['gpober@iamcfo.com']
+        const adminEmails = ['gpober@iamcfo.com', 'iamcfo28@gmail.com']
         if (adminEmails.includes(email)) {
           router.push('/admin')
         } else {
@@ -65,7 +64,7 @@ export default function LoginPage() {
         router.push('/admin')
       } else if (subdomain) {
         // Get the session to pass it to the subdomain
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session } } = await authClient.auth.getSession()
         
         if (session?.access_token && session?.refresh_token) {
           // Pass the session tokens as URL hash parameters
@@ -77,6 +76,8 @@ export default function LoginPage() {
             token_type: 'bearer',
           })
           
+          console.log('✅ Redirecting to client subdomain with session')
+          
           // Redirect with session in URL hash
           window.location.href = `https://${subdomain}.iamcfo.com/dashboard#${params.toString()}`
         } else {
@@ -86,7 +87,7 @@ export default function LoginPage() {
       } else {
         // User has no organization - shouldn't happen, but handle it
         setError('No organization found for your account. Please contact support.')
-        await supabase.auth.signOut()
+        await authClient.auth.signOut()
         setLoading(false)
       }
 
