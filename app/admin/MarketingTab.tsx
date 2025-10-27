@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import ProspectUploader from './ProspectUploader'
+import ProspectsTable from './ProspectsTable'
 
 interface MarketingMetrics {
   total_prospects: number
@@ -22,6 +24,7 @@ interface Prospect {
   company: string | null
   title: string | null
   revenue_estimate: string | null
+  industry: string | null
   email_sent: boolean
   email_sent_at: string | null
   replied: boolean
@@ -31,6 +34,8 @@ interface Prospect {
   sequence_step: number
   source: string
   created_at: string
+  phone: string | null
+  notes: string | null
 }
 
 export default function MarketingTab() {
@@ -119,6 +124,11 @@ export default function MarketingTab() {
     }
   }
 
+  const refreshData = () => {
+    fetchMetrics()
+    fetchProspects()
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -129,6 +139,9 @@ export default function MarketingTab() {
 
   return (
     <div className="space-y-6">
+      {/* Upload Prospects - Enhanced with Export & Delete */}
+      <ProspectUploader onUploadComplete={refreshData} />
+
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white rounded-lg shadow p-6">
@@ -270,11 +283,11 @@ export default function MarketingTab() {
         </div>
       </div>
 
-      {/* Prospects Table */}
+      {/* Prospects Table Header with Filters */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Prospects</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Recent Prospects (Last 50)</h3>
             <div className="flex space-x-2">
               <button
                 onClick={() => setFilter('all')}
@@ -320,95 +333,8 @@ export default function MarketingTab() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Company
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Revenue
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Email Sent
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Source
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {prospects.map((prospect) => (
-                <tr key={prospect.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {prospect.first_name} {prospect.last_name}
-                      </div>
-                      <div className="text-sm text-gray-500">{prospect.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {prospect.company || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {prospect.revenue_estimate || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col space-y-1">
-                      {prospect.became_client && (
-                        <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs">
-                          Client ✓
-                        </span>
-                      )}
-                      {prospect.demo_booked && !prospect.became_client && (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                          Demo Booked
-                        </span>
-                      )}
-                      {prospect.replied && !prospect.demo_booked && (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                          Replied
-                        </span>
-                      )}
-                      {prospect.email_sent && !prospect.replied && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                          Email {prospect.sequence_step}
-                        </span>
-                      )}
-                      {!prospect.email_sent && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
-                          Not Contacted
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {prospect.email_sent_at
-                      ? new Date(prospect.email_sent_at).toLocaleDateString()
-                      : 'Not sent'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {prospect.source}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {prospects.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            No prospects found. Upload prospects to get started!
-          </div>
-        )}
+        {/* Enhanced Table with Inline Editing */}
+        <ProspectsTable prospects={prospects} onUpdate={refreshData} />
       </div>
     </div>
   )
