@@ -1,0 +1,4 @@
+email,first_name,last_name,company,title,revenue_estimate,industry,source
+john.smith@acmecorp.com,John,Smith,Acme Manufacturing,CEO,$5M-$10M,Manufacturing,apollo
+sarah.jones@techsolutions.com,Sarah,Jones,Tech Solutions Inc,CFO,$2M-$5M,Technology,apollo
+mike.wilson@healthcare.com,Mike,Wilson,Premier Healthcare,Finance Director,$10M-$25M,Healthcare,apollo
