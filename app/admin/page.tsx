@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import MarketingTab from './MarketingTab' // Import the new component
 
 interface Organization {
   id: string
@@ -33,7 +34,7 @@ interface User {
 export default function AdminPanel() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'orgs' | 'users'>('orgs')
+  const [activeTab, setActiveTab] = useState<'orgs' | 'users' | 'marketing'>('orgs') // Added 'marketing'
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null)
@@ -48,9 +49,10 @@ export default function AdminPanel() {
     if (isAdmin) {
       if (activeTab === 'orgs') {
         fetchOrganizations()
-      } else {
+      } else if (activeTab === 'users') {
         fetchUsers()
       }
+      // Marketing tab loads its own data
     }
   }, [isAdmin, activeTab, selectedOrg])
 
@@ -62,8 +64,11 @@ export default function AdminPanel() {
       return
     }
 
-    // Add your admin email here
-    const adminEmails = ['gpober@iamcfo.com']
+    // Admin emails - add Gonzo's email here
+    const adminEmails = [
+      'gpober@iamcfo.com',
+      // 'gonzo@iamcfo.com' // Add Gonzo's email
+    ]
     
     const { data: user } = await supabase
       .from('users')
@@ -166,10 +171,10 @@ export default function AdminPanel() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
-          <p className="text-gray-600 mt-2">Manage all organizations and users</p>
+          <p className="text-gray-600 mt-2">Manage organizations, users, and marketing</p>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs - Added Marketing */}
         <div className="mb-6 border-b border-gray-200">
           <div className="flex space-x-8">
             <button
@@ -192,11 +197,24 @@ export default function AdminPanel() {
             >
               Users ({users.length})
             </button>
+            <button
+              onClick={() => setActiveTab('marketing')}
+              className={`pb-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'marketing'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              🚀 Marketing Pipeline
+            </button>
           </div>
         </div>
 
+        {/* Marketing Tab - NEW */}
+        {activeTab === 'marketing' && <MarketingTab />}
+
         {/* Organizations Table */}
-        {activeTab === 'orgs' ? (
+        {activeTab === 'orgs' && (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -291,8 +309,10 @@ export default function AdminPanel() {
               </tbody>
             </table>
           </div>
-        ) : (
-          // Users Table
+        )}
+
+        {/* Users Table */}
+        {activeTab === 'users' && (
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
               <select
