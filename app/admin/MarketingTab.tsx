@@ -16,6 +16,19 @@ interface MarketingMetrics {
   demo_to_client_rate: number
 }
 
+interface LinkedInPostPerformance {
+  post_id: string
+  topic: string
+  post_date: string
+  tracking_url: string
+  linkedin_url: string | null
+  clicks: number
+  prospects: number
+  demos: number
+  clients: number
+  revenue: number
+}
+
 interface Prospect {
   id: string
   email: string
@@ -38,44 +51,64 @@ interface Prospect {
   notes: string | null
 }
 
+type SourceFilter = 'all' | 'email' | 'linkedin' | 'tiktok' | 'instagram' | 'twitter' | 'referral' | 'website'
+type StatusFilter = 'all' | 'replied' | 'demo' | 'client'
+
 export default function MarketingTab() {
   const [metrics, setMetrics] = useState<MarketingMetrics | null>(null)
   const [prospects, setProspects] = useState<Prospect[]>([])
-  const [filter, setFilter] = useState<'all' | 'replied' | 'demo' | 'client'>('all')
+  const [linkedinPosts, setLinkedinPosts] = useState<LinkedInPostPerformance[]>([])
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
     fetchMetrics()
     fetchProspects()
-  }, [filter])
+    if (sourceFilter === 'linkedin') {
+      fetchLinkedInPerformance()
+    }
+  }, [sourceFilter, statusFilter])
 
   async function fetchMetrics() {
     try {
-      // Get counts from prospects table
-      const { count: totalProspects } = await supabase
-        .from('prospects')
-        .select('*', { count: 'exact', head: true })
+      // Build base query with source filter
+      let baseQuery = supabase.from('prospects')
+      
+      if (sourceFilter !== 'all') {
+        baseQuery = baseQuery.select('*', { count: 'exact', head: true }).ilike('source', `${sourceFilter}%`)
+      }
 
-      const { count: emailsSent } = await supabase
-        .from('prospects')
-        .select('*', { count: 'exact', head: true })
-        .eq('email_sent', true)
+      const { count: totalProspects } = await (
+        sourceFilter === 'all' 
+          ? supabase.from('prospects').select('*', { count: 'exact', head: true })
+          : supabase.from('prospects').select('*', { count: 'exact', head: true }).ilike('source', `${sourceFilter}%`)
+      )
 
-      const { count: replies } = await supabase
-        .from('prospects')
-        .select('*', { count: 'exact', head: true })
-        .eq('replied', true)
+      const { count: emailsSent } = await (
+        sourceFilter === 'all'
+          ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('email_sent', true)
+          : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('email_sent', true).ilike('source', `${sourceFilter}%`)
+      )
 
-      const { count: demos } = await supabase
-        .from('prospects')
-        .select('*', { count: 'exact', head: true })
-        .eq('demo_booked', true)
+      const { count: replies } = await (
+        sourceFilter === 'all'
+          ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('replied', true)
+          : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('replied', true).ilike('source', `${sourceFilter}%`)
+      )
 
-      const { count: clients } = await supabase
-        .from('prospects')
-        .select('*', { count: 'exact', head: true })
-        .eq('became_client', true)
+      const { count: demos } = await (
+        sourceFilter === 'all'
+          ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('demo_booked', true)
+          : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('demo_booked', true).ilike('source', `${sourceFilter}%`)
+      )
+
+      const { count: clients } = await (
+        sourceFilter === 'all'
+          ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true)
+          : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true).ilike('source', `${sourceFilter}%`)
+      )
 
       // Calculate conversion rates
       const emailToReplyRate = emailsSent ? ((replies || 0) / emailsSent) * 100 : 0
@@ -105,11 +138,17 @@ export default function MarketingTab() {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (filter === 'replied') {
+      // Apply source filter
+      if (sourceFilter !== 'all') {
+        query = query.ilike('source', `${sourceFilter}%`)
+      }
+
+      // Apply status filter
+      if (statusFilter === 'replied') {
         query = query.eq('replied', true)
-      } else if (filter === 'demo') {
+      } else if (statusFilter === 'demo') {
         query = query.eq('demo_booked', true)
-      } else if (filter === 'client') {
+      } else if (statusFilter === 'client') {
         query = query.eq('became_client', true)
       }
 
@@ -124,9 +163,55 @@ export default function MarketingTab() {
     }
   }
 
+  async function fetchLinkedInPerformance() {
+    try {
+      const { data, error } = await supabase
+        .from('linkedin_campaign_performance')
+        .select('*')
+        .order('prospects_generated', { ascending: false })
+        .limit(10)
+
+      if (error) throw error
+
+      const formatted: LinkedInPostPerformance[] = (data || []).map((post: any) => ({
+        post_id: post.id,
+        topic: post.topic || 'Untitled',
+        post_date: post.post_date,
+        tracking_url: post.tracking_url || '',
+        linkedin_url: post.linkedin_url,
+        clicks: post.website_clicks || 0,
+        prospects: post.prospects_generated || 0,
+        demos: post.demos_booked || 0,
+        clients: post.clients_closed || 0,
+        revenue: post.revenue_generated || 0
+      }))
+
+      setLinkedinPosts(formatted)
+    } catch (error) {
+      console.error('Error fetching LinkedIn performance:', error)
+    }
+  }
+
   const refreshData = () => {
     fetchMetrics()
     fetchProspects()
+    if (sourceFilter === 'linkedin') {
+      fetchLinkedInPerformance()
+    }
+  }
+
+  const getSourceLabel = (source: SourceFilter) => {
+    const labels: Record<SourceFilter, string> = {
+      all: 'All Sources',
+      email: 'Email Campaigns',
+      linkedin: 'LinkedIn',
+      tiktok: 'TikTok',
+      instagram: 'Instagram',
+      twitter: 'Twitter/X',
+      referral: 'Referrals',
+      website: 'Website'
+    }
+    return labels[source]
   }
 
   if (loading) {
@@ -139,13 +224,46 @@ export default function MarketingTab() {
 
   return (
     <div className="space-y-6">
-      {/* Upload Prospects - Enhanced with Export & Delete */}
+      {/* Upload Prospects */}
       <ProspectUploader onUploadComplete={refreshData} />
+
+      {/* Source Filter Dropdown */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700">Filter by Source:</h3>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          >
+            <option value="all">🌐 All Sources</option>
+            <option value="email">📧 Email Campaigns</option>
+            <option value="linkedin">💼 LinkedIn</option>
+            <option value="tiktok">🎵 TikTok</option>
+            <option value="instagram">📸 Instagram</option>
+            <option value="twitter">🐦 Twitter/X</option>
+            <option value="referral">👥 Referrals</option>
+            <option value="website">🌍 Website Direct</option>
+          </select>
+        </div>
+        
+        {/* Source Stats Summary */}
+        <div className="mt-3 flex items-center space-x-4 text-xs text-gray-500">
+          <span>Showing: <strong className="text-gray-900">{metrics?.total_prospects || 0}</strong> prospects</span>
+          {sourceFilter !== 'all' && (
+            <span className="text-blue-600">
+              from {getSourceLabel(sourceFilter)}
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-sm font-medium text-gray-500">Total Prospects</div>
+          <div className="text-sm font-medium text-gray-500">
+            {sourceFilter === 'all' ? 'Total Prospects' : `${getSourceLabel(sourceFilter)} Prospects`}
+          </div>
           <div className="text-3xl font-bold text-gray-900 mt-2">
             {metrics?.total_prospects || 0}
           </div>
@@ -194,9 +312,69 @@ export default function MarketingTab() {
         </div>
       </div>
 
+      {/* LinkedIn Top Performers (only show when LinkedIn filter is active) */}
+      {sourceFilter === 'linkedin' && linkedinPosts.length > 0 && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            🏆 Top Performing LinkedIn Posts
+          </h3>
+          <div className="space-y-3">
+            {linkedinPosts.slice(0, 5).map((post, idx) => (
+              <div key={post.post_id} className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="text-2xl font-bold text-blue-600">#{idx + 1}</span>
+                      <span className="text-sm font-semibold text-gray-900">{post.topic}</span>
+                    </div>
+                    <div className="text-xs text-gray-500 mb-2">
+                      Posted: {new Date(post.post_date).toLocaleDateString()}
+                      {post.linkedin_url && (
+                        <a
+                          href={post.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-500 hover:underline"
+                        >
+                          View Post →
+                        </a>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-5 gap-3 text-center">
+                      <div>
+                        <div className="text-xs text-gray-500">Clicks</div>
+                        <div className="text-lg font-bold text-gray-900">{post.clicks}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500">Prospects</div>
+                        <div className="text-lg font-bold text-green-600">{post.prospects}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500">Demos</div>
+                        <div className="text-lg font-bold text-purple-600">{post.demos}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500">Clients</div>
+                        <div className="text-lg font-bold text-indigo-600">{post.clients}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500">Revenue</div>
+                        <div className="text-lg font-bold text-green-700">${post.revenue}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Conversion Funnel */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversion Funnel</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          {sourceFilter === 'all' ? 'Overall Conversion Funnel' : `${getSourceLabel(sourceFilter)} Funnel`}
+        </h3>
         <div className="space-y-3">
           <div className="flex items-center">
             <div className="w-32 text-sm font-medium text-gray-700">Prospects</div>
@@ -283,16 +461,23 @@ export default function MarketingTab() {
         </div>
       </div>
 
-      {/* Prospects Table Header with Filters */}
+      {/* Prospects Table Header with Status Filters */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Prospects (Last 50)</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Recent Prospects (Last 50)
+              {sourceFilter !== 'all' && (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  from {getSourceLabel(sourceFilter)}
+                </span>
+              )}
+            </h3>
             <div className="flex space-x-2">
               <button
-                onClick={() => setFilter('all')}
+                onClick={() => setStatusFilter('all')}
                 className={`px-3 py-1 text-sm rounded ${
-                  filter === 'all'
+                  statusFilter === 'all'
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
@@ -300,9 +485,9 @@ export default function MarketingTab() {
                 All
               </button>
               <button
-                onClick={() => setFilter('replied')}
+                onClick={() => setStatusFilter('replied')}
                 className={`px-3 py-1 text-sm rounded ${
-                  filter === 'replied'
+                  statusFilter === 'replied'
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
@@ -310,9 +495,9 @@ export default function MarketingTab() {
                 Replied
               </button>
               <button
-                onClick={() => setFilter('demo')}
+                onClick={() => setStatusFilter('demo')}
                 className={`px-3 py-1 text-sm rounded ${
-                  filter === 'demo'
+                  statusFilter === 'demo'
                     ? 'bg-purple-500 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
@@ -320,9 +505,9 @@ export default function MarketingTab() {
                 Demos
               </button>
               <button
-                onClick={() => setFilter('client')}
+                onClick={() => setStatusFilter('client')}
                 className={`px-3 py-1 text-sm rounded ${
-                  filter === 'client'
+                  statusFilter === 'client'
                     ? 'bg-indigo-500 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
