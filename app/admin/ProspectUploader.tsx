@@ -25,10 +25,20 @@ export default function ProspectUploader({ onUploadComplete }: { onUploadComplet
   const [success, setSuccess] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
   
-  // Manual email sender state
-  const [manualEmail, setManualEmail] = useState('')
-  const [sendingManual, setSendingManual] = useState(false)
-  const [manualResult, setManualResult] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+  // Manual prospect add state
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [manualProspect, setManualProspect] = useState({
+    email: '',
+    first_name: '',
+    last_name: '',
+    company: '',
+    title: '',
+    revenue_estimate: '',
+    industry: '',
+    phone: '',
+    source: 'manual',
+  })
+  const [addingProspect, setAddingProspect] = useState(false)
   
   const supabase = createClient()
 
@@ -197,44 +207,66 @@ export default function ProspectUploader({ onUploadComplete }: { onUploadComplet
     }
   }
 
-  // Manual email sender
-  const sendManualEmail = async () => {
-    if (!manualEmail || !manualEmail.includes('@')) {
-      setManualResult({ type: 'error', message: 'Please enter a valid email' })
+  // Add single prospect manually
+  const addManualProspect = async () => {
+    if (!manualProspect.email || !manualProspect.email.includes('@')) {
+      setError('Please enter a valid email address')
       return
     }
 
-    setSendingManual(true)
-    setManualResult(null)
+    setAddingProspect(true)
+    setError(null)
+    setSuccess(null)
 
     try {
-      const response = await fetch('/api/marketing/send-test-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: manualEmail })
-      })
+      const { data, error: insertError } = await supabase
+        .from('prospects')
+        .insert([{
+          email: manualProspect.email.toLowerCase(),
+          first_name: manualProspect.first_name || null,
+          last_name: manualProspect.last_name || null,
+          company: manualProspect.company || null,
+          title: manualProspect.title || null,
+          revenue_estimate: manualProspect.revenue_estimate || null,
+          industry: manualProspect.industry || null,
+          phone: manualProspect.phone || null,
+          source: manualProspect.source || 'manual',
+          uses_quickbooks: true,
+          email_sent: false,
+          sequence_step: 0
+        }])
+        .select()
 
-      const data = await response.json()
-
-      if (response.ok) {
-        setManualResult({ 
-          type: 'success', 
-          message: `✅ Email sent to ${manualEmail}!` 
-        })
-        setManualEmail('')
+      if (insertError) {
+        if (insertError.code === '23505') {
+          setError('This email already exists in your prospects')
+        } else {
+          throw insertError
+        }
       } else {
-        setManualResult({ 
-          type: 'error', 
-          message: `❌ Failed: ${data.error || 'Unknown error'}` 
+        setSuccess(`✅ Added ${manualProspect.email} as a prospect!`)
+        setManualProspect({
+          email: '',
+          first_name: '',
+          last_name: '',
+          company: '',
+          title: '',
+          revenue_estimate: '',
+          industry: '',
+          phone: '',
+          source: 'manual',
         })
+        setShowAddForm(false)
+        
+        if (onUploadComplete) {
+          onUploadComplete()
+        }
       }
-    } catch (error) {
-      setManualResult({ 
-        type: 'error', 
-        message: `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}` 
-      })
+    } catch (err: any) {
+      console.error('Add prospect error:', err)
+      setError(`Failed to add prospect: ${err.message}`)
     } finally {
-      setSendingManual(false)
+      setAddingProspect(false)
     }
   }
 
@@ -319,53 +351,114 @@ export default function ProspectUploader({ onUploadComplete }: { onUploadComplet
 
   return (
     <div className="space-y-6">
-      {/* Manual Email Sender */}
+      {/* Add Single Prospect */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          ➕ Send Manual Test Email
-        </h3>
-        
-        <div className="flex gap-3">
-          <input
-            type="email"
-            value={manualEmail}
-            onChange={(e) => setManualEmail(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendManualEmail()}
-            placeholder="email@example.com"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            disabled={sendingManual}
-          />
-          
-          <button
-            onClick={sendManualEmail}
-            disabled={sendingManual || !manualEmail}
-            className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap ${
-              sendingManual || !manualEmail
-                ? 'bg-gray-400 cursor-not-allowed text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-          >
-            {sendingManual ? 'Sending...' : 'Send Test'}
-          </button>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">➕ Add Single Prospect</h3>
+          {!showAddForm && (
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg font-medium"
+            >
+              + Add Prospect
+            </button>
+          )}
         </div>
 
-        {manualResult && (
-          <div className={`mt-4 p-4 rounded-lg ${
-            manualResult.type === 'success' 
-              ? 'bg-green-50 border border-green-200' 
-              : 'bg-red-50 border border-red-200'
-          }`}>
-            <p className={`text-sm ${
-              manualResult.type === 'success' ? 'text-green-800' : 'text-red-800'
-            }`}>
-              {manualResult.message}
-            </p>
+        {showAddForm && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="email"
+                placeholder="Email *"
+                value={manualProspect.email}
+                onChange={(e) => setManualProspect({...manualProspect, email: e.target.value})}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="First Name"
+                value={manualProspect.first_name}
+                onChange={(e) => setManualProspect({...manualProspect, first_name: e.target.value})}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Last Name"
+                value={manualProspect.last_name}
+                onChange={(e) => setManualProspect({...manualProspect, last_name: e.target.value})}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Company"
+                value={manualProspect.company}
+                onChange={(e) => setManualProspect({...manualProspect, company: e.target.value})}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Title"
+                value={manualProspect.title}
+                onChange={(e) => setManualProspect({...manualProspect, title: e.target.value})}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Revenue (e.g. 2M-10M)"
+                value={manualProspect.revenue_estimate}
+                onChange={(e) => setManualProspect({...manualProspect, revenue_estimate: e.target.value})}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Industry"
+                value={manualProspect.industry}
+                onChange={(e) => setManualProspect({...manualProspect, industry: e.target.value})}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Phone"
+                value={manualProspect.phone}
+                onChange={(e) => setManualProspect({...manualProspect, phone: e.target.value})}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowAddForm(false)
+                  setManualProspect({
+                    email: '', first_name: '', last_name: '', company: '',
+                    title: '', revenue_estimate: '', industry: '', phone: '', source: 'manual'
+                  })
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addManualProspect}
+                disabled={addingProspect || !manualProspect.email}
+                className={`px-6 py-2 rounded-lg font-medium text-sm ${
+                  addingProspect || !manualProspect.email
+                    ? 'bg-gray-400 cursor-not-allowed text-white'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {addingProspect ? 'Adding...' : 'Add Prospect'}
+              </button>
+            </div>
           </div>
         )}
 
-        <p className="mt-3 text-xs text-gray-500">
-          Sends Email #1 from campaign to any email address. Perfect for testing!
-        </p>
+        {!showAddForm && (
+          <p className="text-sm text-gray-500">
+            Click "+ Add Prospect" to manually add a single prospect to your list
+          </p>
+        )}
       </div>
 
       {/* Bulk Upload Section */}
