@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     
     console.log('📅 [CALENDLY] Webhook received:', body.event);
 
-    // Calendly sends "invitee.created" event when someone books
+    // Handle booking creation
     if (body.event === 'invitee.created') {
       const payload = body.payload;
       
@@ -101,6 +101,123 @@ export async function POST(request: NextRequest) {
           success: true,
           action: 'created',
           email 
+        });
+      }
+    }
+
+    // Handle cancellation
+    if (body.event === 'invitee.canceled') {
+      const payload = body.payload;
+      
+      const email = payload.email.toLowerCase().trim();
+      const cancellation_reason = payload.cancellation?.reason || 'No reason provided';
+      const canceled_at = payload.canceled_at || new Date().toISOString();
+      
+      console.log('❌ [CALENDLY] Cancellation:', {
+        email,
+        reason: cancellation_reason,
+        canceled_at
+      });
+
+      // Find and update the prospect
+      const { data: existing } = await supabase
+        .from('prospects')
+        .select('*')
+        .ilike('email', email)
+        .single();
+
+      if (existing) {
+        console.log('📅 [CALENDLY] Updating prospect after cancellation:', email);
+        
+        const { error: updateError } = await supabase
+          .from('prospects')
+          .update({
+            demo_booked: false,
+            demo_booked_at: null,
+            notes: existing.notes 
+              ? `${existing.notes}\n\nDemo canceled: ${canceled_at} - ${cancellation_reason}`
+              : `Demo canceled: ${canceled_at} - ${cancellation_reason}`
+          })
+          .eq('email', email);
+
+        if (updateError) {
+          console.error('❌ [CALENDLY] Cancellation update error:', updateError);
+          return NextResponse.json({ 
+            error: 'Failed to update cancellation' 
+          }, { status: 500 });
+        }
+
+        console.log('✅ [CALENDLY] Cancellation recorded');
+        
+        return NextResponse.json({ 
+          success: true,
+          action: 'canceled',
+          email 
+        });
+      } else {
+        console.log('⚠️ [CALENDLY] Prospect not found for cancellation:', email);
+        return NextResponse.json({ 
+          success: true,
+          message: 'Prospect not found (may have been deleted)' 
+        });
+      }
+    }
+
+    // Handle rescheduling
+    if (body.event === 'invitee.rescheduled') {
+      const payload = body.payload;
+      
+      const email = payload.email.toLowerCase().trim();
+      const new_meeting_time = payload.scheduled_event?.start_time;
+      const rescheduled_at = new Date().toISOString();
+      
+      console.log('🔄 [CALENDLY] Rescheduled:', {
+        email,
+        new_meeting_time,
+        rescheduled_at
+      });
+
+      // Find and update the prospect
+      const { data: existing } = await supabase
+        .from('prospects')
+        .select('*')
+        .ilike('email', email)
+        .single();
+
+      if (existing) {
+        console.log('📅 [CALENDLY] Updating prospect after reschedule:', email);
+        
+        const { error: updateError } = await supabase
+          .from('prospects')
+          .update({
+            demo_booked: true, // Still booked, just different time
+            demo_booked_at: rescheduled_at,
+            notes: existing.notes 
+              ? `${existing.notes}\n\nDemo rescheduled to: ${new_meeting_time}`
+              : `Demo rescheduled to: ${new_meeting_time}`
+          })
+          .eq('email', email);
+
+        if (updateError) {
+          console.error('🔄 [CALENDLY] Reschedule update error:', updateError);
+          return NextResponse.json({ 
+            error: 'Failed to update reschedule' 
+          }, { status: 500 });
+        }
+
+        console.log('✅ [CALENDLY] Reschedule recorded');
+        
+        return NextResponse.json({ 
+          success: true,
+          action: 'rescheduled',
+          email,
+          new_time: new_meeting_time
+        });
+      } else {
+        console.log('⚠️ [CALENDLY] Prospect not found for reschedule:', email);
+        return NextResponse.json({ 
+          success: true,
+          message: 'Prospect not found (may have been deleted)' 
         });
       }
     }
