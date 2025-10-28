@@ -230,17 +230,15 @@ export default function MarketingTab() {
     setEmailResult(null)
 
     try {
-      // Use existing campaign route with auth and specific email
-      const response = await fetch('/api/marketing/send-campaign', {
+      // Use full API URL since frontend is on different domain
+      const response = await fetch('https://iamcfo-platform.vercel.app/api/marketing/send-campaign', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': 'Bearer iamcfo_campaign_secret_2024_xyz789'
         },
         body: JSON.stringify({ 
-          batch_size: 1,
-          hours_between_emails: 0,
-          specific_email: email
+          specific_email: email 
         })
       })
 
