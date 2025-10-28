@@ -5,12 +5,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// Email templates by industry segment
+// Email templates by sequence step
 const EMAIL_TEMPLATES: Record<number, { subject: string; body: string }> = {
   1: {
     subject: "QB showing cash dropped $28K... but why?",
@@ -34,13 +29,13 @@ Most of our clients are {{revenue_estimate}} businesses using QuickBooks or Xero
 
 Worth a 15-min look?
 
-[Book a quick demo](https://calendly.com/greg-iamcfo/demo)
+[Book a quick demo](https://info.iamcfo.com)
 
 Best,
 Greg Pober
 Founder, I AM CFO
 P: {{phone}}
-{{website}}
+https://info.iamcfo.com
 
 P.S. We just helped a {{revenue_estimate}} {{industry}} company discover they were losing $4K/month in duplicate vendor payments. QuickBooks showed the payments, but didn't flag the duplicates. Took us 10 minutes to find.`
   },
@@ -69,12 +64,12 @@ I AM CFO costs $699/month and shows you what's happening RIGHT NOW.
 
 Want to see it with your actual QuickBooks data?
 
-[Book 15-min demo](https://calendly.com/greg-iamcfo/demo)
+[Book 15-min demo](https://info.iamcfo.com)
 
 Greg Pober
 Founder, I AM CFO
 P: {{phone}}
-{{website}}`
+https://info.iamcfo.com`
   },
   3: {
     subject: "Your books are up to date. Your decisions aren't.",
@@ -108,13 +103,13 @@ Most of our clients are {{revenue_estimate}} {{industry}} companies. They keep t
 
 Worth a look?
 
-[See it live](https://calendly.com/greg-iamcfo/demo)
+[See it live](https://info.iamcfo.com)
 
 Best,
 Greg Pober
 Founder, I AM CFO  
 P: {{phone}}
-{{website}}
+https://info.iamcfo.com
 
 P.S. This is my last email. If you're happy with 2-3 week old financial data, ignore this. But if you've ever thought "I wish I could just SEE my numbers in real-time," that's exactly what I built.`
   }
@@ -127,8 +122,7 @@ function personalizeEmail(template: string, prospect: any): string {
     .replace(/{{company}}/g, prospect.company || 'your company')
     .replace(/{{revenue_estimate}}/g, prospect.revenue_estimate || '$2M-10M')
     .replace(/{{industry}}/g, prospect.industry || 'business')
-    .replace(/{{phone}}/g, process.env.SENDER_PHONE || '954-257-2856')
-    .replace(/{{website}}/g, 'https://iamcfo.com');
+    .replace(/{{phone}}/g, process.env.SENDER_PHONE || '954-257-2856');
 }
 
 // Send email via SendGrid
@@ -172,7 +166,7 @@ async function sendEmail(to: string, subject: string, body: string) {
         footer: {
           enable: true,
           html: `<br><br><small style="color: #666;">I AM CFO | Real-time financial intelligence for growing businesses<br>
-          <a href="https://iamcfo.com/unsubscribe?email=${encodeURIComponent(to)}">Unsubscribe</a></small>`
+          <a href="https://info.iamcfo.com/unsubscribe?email=${encodeURIComponent(to)}">Unsubscribe</a></small>`
         }
       }
     }),
@@ -188,6 +182,12 @@ async function sendEmail(to: string, subject: string, body: string) {
 
 export async function POST(request: Request) {
   try {
+    // Initialize Supabase client at runtime (not build time)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     // Verify authorization
     const authHeader = request.headers.get('authorization');
     const CRON_SECRET = process.env.CRON_SECRET;
@@ -196,7 +196,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { batch_size, hours_between_emails } = await request.json();
+    const body = await request.json();
+    const { batch_size, hours_between_emails } = body;
     
     const batchSize = batch_size || parseInt(process.env.BATCH_SIZE || '50');
     const hoursBetween = hours_between_emails || parseInt(process.env.HOURS_BETWEEN_EMAILS || '48');
