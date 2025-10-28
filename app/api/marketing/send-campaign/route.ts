@@ -197,8 +197,82 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { batch_size, hours_between_emails } = body;
+    const { batch_size, hours_between_emails, specific_email } = body;
     
+    // NEW: Handle single specific email
+    if (specific_email) {
+      console.log(`📧 Sending single email to: ${specific_email}`);
+      
+      const { data: prospect, error: fetchError } = await supabase
+        .from('prospects')
+        .select('*')
+        .eq('email', specific_email.toLowerCase())
+        .single();
+
+      if (fetchError || !prospect) {
+        return NextResponse.json({ 
+          error: 'Prospect not found',
+          sent: 0 
+        }, { status: 404 });
+      }
+
+      // Determine next email
+      const nextEmailNumber = prospect.sequence_step + 1;
+      
+      if (nextEmailNumber > 3) {
+        return NextResponse.json({ 
+          error: 'Prospect has already received all 3 emails',
+          sent: 0
+        }, { status: 400 });
+      }
+
+      const template = EMAIL_TEMPLATES[nextEmailNumber];
+      
+      if (!template) {
+        return NextResponse.json({ 
+          error: `No template for email ${nextEmailNumber}`,
+          sent: 0
+        }, { status: 400 });
+      }
+
+      try {
+        // Personalize and send
+        const subject = personalizeEmail(template.subject, prospect);
+        const emailBody = personalizeEmail(template.body, prospect);
+        
+        await sendEmail(prospect.email, subject, emailBody);
+        
+        // Update database
+        await supabase
+          .from('prospects')
+          .update({
+            email_sent: true,
+            email_sent_at: new Date().toISOString(),
+            sequence_step: nextEmailNumber,
+          })
+          .eq('id', prospect.id);
+
+        console.log(`✅ Sent Email ${nextEmailNumber} to ${specific_email}`);
+
+        return NextResponse.json({
+          message: `Email ${nextEmailNumber} sent successfully`,
+          sent: 1,
+          failed: 0,
+          email: specific_email,
+          email_number: nextEmailNumber
+        });
+        
+      } catch (error) {
+        console.error(`❌ Failed to send to ${specific_email}:`, error);
+        return NextResponse.json({ 
+          error: error instanceof Error ? error.message : 'Failed to send',
+          sent: 0,
+          failed: 1
+        }, { status: 500 });
+      }
+    }
+    
+    // ORIGINAL: Handle batch campaign
     const batchSize = batch_size || parseInt(process.env.BATCH_SIZE || '50');
     const hoursBetween = hours_between_emails || parseInt(process.env.HOURS_BETWEEN_EMAILS || '48');
 
@@ -251,10 +325,10 @@ export async function POST(request: Request) {
 
         // Personalize email
         const subject = personalizeEmail(template.subject, prospect);
-        const body = personalizeEmail(template.body, prospect);
+        const emailBody = personalizeEmail(template.body, prospect);
 
         // Send email
-        await sendEmail(prospect.email, subject, body);
+        await sendEmail(prospect.email, subject, emailBody);
 
         // Update prospect record
         await supabase
@@ -305,6 +379,7 @@ export async function GET() {
     status: 'ready',
     endpoints: {
       'POST /api/marketing/send-campaign': 'Send batch of campaign emails',
+      'POST with specific_email': 'Send to single prospect'
     },
     config: {
       batch_size: process.env.BATCH_SIZE || '50',
