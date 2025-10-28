@@ -230,15 +230,23 @@ export default function MarketingTab() {
     setEmailResult(null)
 
     try {
-      const response = await fetch('/api/marketing/send-single-email', {
+      // Use existing campaign route with auth and specific email
+      const response = await fetch('/api/marketing/send-campaign', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer iamcfo_campaign_secret_2024_xyz789'
+        },
+        body: JSON.stringify({ 
+          batch_size: 1,
+          hours_between_emails: 0,
+          specific_email: email
+        })
       })
 
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok && data.sent >= 1) {
         setEmailResult({ 
           email, 
           success: true, 
@@ -256,7 +264,7 @@ export default function MarketingTab() {
         setEmailResult({ 
           email, 
           success: false, 
-          message: data.error || 'Failed to send' 
+          message: data.error || data.message || 'Failed to send' 
         })
       }
     } catch (error) {
