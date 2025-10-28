@@ -213,7 +213,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ 
           error: 'Prospect not found',
           sent: 0 
-        }, { status: 404 });
+        }, { 
+          status: 404,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
+        });
       }
 
       // Determine next email
@@ -223,7 +230,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ 
           error: 'Prospect has already received all 3 emails',
           sent: 0
-        }, { status: 400 });
+        }, { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
+        });
       }
 
       const template = EMAIL_TEMPLATES[nextEmailNumber];
@@ -232,7 +246,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ 
           error: `No template for email ${nextEmailNumber}`,
           sent: 0
-        }, { status: 400 });
+        }, { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
+        });
       }
 
       try {
@@ -260,6 +281,12 @@ export async function POST(request: Request) {
           failed: 0,
           email: specific_email,
           email_number: nextEmailNumber
+        }, {
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
         });
         
       } catch (error) {
@@ -268,7 +295,14 @@ export async function POST(request: Request) {
           error: error instanceof Error ? error.message : 'Failed to send',
           sent: 0,
           failed: 1
-        }, { status: 500 });
+        }, { 
+          status: 500,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
+        });
       }
     }
     
@@ -361,13 +395,26 @@ export async function POST(request: Request) {
       total_processed: prospects.length,
       next_batch_in_hours: hoursBetween,
       errors: results.errors.length > 0 ? results.errors : undefined,
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      }
     });
     
   } catch (error) {
     console.error('Campaign send error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        }
+      }
     );
   }
 }
@@ -385,6 +432,24 @@ export async function GET() {
       batch_size: process.env.BATCH_SIZE || '50',
       hours_between_emails: process.env.HOURS_BETWEEN_EMAILS || '48',
       sender: process.env.SENDER_EMAIL || 'gpober@iamcfo.com',
+    }
+  }, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    }
+  });
+}
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     }
   });
 }
