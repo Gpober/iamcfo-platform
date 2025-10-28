@@ -73,13 +73,7 @@ export default function MarketingTab() {
 
   async function fetchMetrics() {
     try {
-      // Build base query with source filter
-      let baseQuery = supabase.from('prospects')
-      
-      if (sourceFilter !== 'all') {
-        baseQuery = baseQuery.select('*', { count: 'exact', head: true }).ilike('source', `${sourceFilter}%`)
-      }
-
+      // Get counts from prospects table with source filter
       const { count: totalProspects } = await (
         sourceFilter === 'all' 
           ? supabase.from('prospects').select('*', { count: 'exact', head: true })
