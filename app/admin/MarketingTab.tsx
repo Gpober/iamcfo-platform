@@ -113,9 +113,9 @@ export default function MarketingTab() {
           : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true).ilike('source', `${sourceFilter}%`)
       )
 
-      const emailToReplyRate = emailsSent ? (replies / emailsSent) * 100 : 0
-      const replyToDemoRate = replies ? (demos / replies) * 100 : 0
-      const demoToClientRate = demos ? (clients / demos) * 100 : 0
+      const emailToReplyRate = emailsSent && replies ? (replies / emailsSent) * 100 : 0
+      const replyToDemoRate = replies && demos ? (demos / replies) * 100 : 0
+      const demoToClientRate = demos && clients ? (clients / demos) * 100 : 0
 
       setMetrics({
         total_prospects: totalProspects || 0,
