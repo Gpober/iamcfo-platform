@@ -77,6 +77,10 @@ export default function MarketingTab() {
   const [loading, setLoading] = useState(true)
   const [loadingProspects, setLoadingProspects] = useState(false)
   
+  // Sorting state
+  const [sortField, setSortField] = useState<'email' | 'name' | 'company' | 'created_at'>('created_at')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  
   // Send email state
   const [sendingEmail, setSendingEmail] = useState<string | null>(null)
   const [emailResult, setEmailResult] = useState<{ email: string, success: boolean, message: string } | null>(null)
@@ -93,7 +97,7 @@ export default function MarketingTab() {
   useEffect(() => {
     setCurrentPage(1) // Reset to page 1 when filters change
     fetchProspects(1)
-  }, [sourceFilter, statusFilter, searchQuery])
+  }, [sourceFilter, statusFilter, searchQuery, sortField, sortDirection])
 
   useEffect(() => {
     fetchProspects(currentPage)
@@ -202,8 +206,20 @@ export default function MarketingTab() {
       let query = supabase
         .from('prospects')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
         .range(from, to)
+
+      // Apply sorting
+      if (sortField === 'name') {
+        // Sort by first_name, then last_name
+        query = query.order('first_name', { ascending: sortDirection === 'asc', nullsFirst: false })
+        query = query.order('last_name', { ascending: sortDirection === 'asc', nullsFirst: false })
+      } else if (sortField === 'email') {
+        query = query.order('email', { ascending: sortDirection === 'asc' })
+      } else if (sortField === 'company') {
+        query = query.order('company', { ascending: sortDirection === 'asc', nullsFirst: false })
+      } else {
+        query = query.order('created_at', { ascending: sortDirection === 'asc' })
+      }
 
       if (sourceFilter !== 'all') {
         query = query.ilike('source', `${sourceFilter}%`)
@@ -304,6 +320,41 @@ export default function MarketingTab() {
   function refreshData() {
     fetchMetrics()
     fetchProspects(currentPage)
+  }
+
+  function handleSort(field: 'email' | 'name' | 'company' | 'created_at') {
+    if (sortField === field) {
+      // Toggle direction if clicking same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      // New field, default to ascending
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  function getSortIcon(field: 'email' | 'name' | 'company' | 'created_at') {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      )
+    }
+    
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      )
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      )
+    }
   }
 
   function getSourceLabel(source: SourceFilter) {
@@ -595,12 +646,42 @@ export default function MarketingTab() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th 
+                    onClick={() => handleSort('email')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Email</span>
+                      {getSortIcon('email')}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('name')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Name</span>
+                      {getSortIcon('name')}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('company')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Company</span>
+                      {getSortIcon('company')}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Source
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
