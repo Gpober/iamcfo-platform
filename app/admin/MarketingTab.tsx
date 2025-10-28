@@ -230,7 +230,7 @@ export default function MarketingTab() {
     setEmailResult(null)
 
     try {
-      const response = await fetch('/api/marketing/send-test-email', {
+      const response = await fetch('/api/marketing/send-single-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -244,6 +244,9 @@ export default function MarketingTab() {
           success: true, 
           message: 'Email sent!' 
         })
+        
+        // Refresh data to update metrics
+        refreshData()
         
         // Clear success message after 3 seconds
         setTimeout(() => {
