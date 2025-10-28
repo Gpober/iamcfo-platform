@@ -17,16 +17,26 @@ interface MarketingMetrics {
 }
 
 interface LinkedInPostPerformance {
-  post_id: string
-  topic: string
+  id: string
   post_date: string
-  tracking_url: string
+  status: string
+  topic: string
+  impressions: number
+  likes: number
+  comments: number
+  shares: number
+  linkedin_clicks: number
+  engagement_rate: number
+  click_through_rate: number
+  website_clicks: number
+  prospects_generated: number
+  demos_booked: number
+  clients_closed: number
+  click_to_prospect_rate: number
+  prospect_to_demo_rate: number
+  revenue_generated: number
   linkedin_url: string | null
-  clicks: number
-  prospects: number
-  demos: number
-  clients: number
-  revenue: number
+  posted_at: string | null
 }
 
 interface Prospect {
@@ -83,46 +93,85 @@ export default function MarketingTab() {
 
   async function fetchMetrics() {
     try {
-      const { count: totalProspects } = await (
-        sourceFilter === 'all' 
-          ? supabase.from('prospects').select('*', { count: 'exact', head: true })
-          : supabase.from('prospects').select('*', { count: 'exact', head: true }).ilike('source', `${sourceFilter}%`)
-      )
+      let totalProspects = 0
+      let emailsSent = 0
+      let replies = 0
+      let demos = 0
+      let clients = 0
 
-      const { count: emailsSent } = await (
-        sourceFilter === 'all'
-          ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('email_sent', true)
-          : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('email_sent', true).ilike('source', `${sourceFilter}%`)
-      )
+      // LinkedIn-specific metrics from linkedin_post_performance table
+      if (sourceFilter === 'linkedin') {
+        const { data: performanceData } = await supabase
+          .from('linkedin_post_performance')
+          .select('impressions, linkedin_clicks, website_clicks, prospects_generated, demos_booked, clients_closed, likes, comments, shares, posted_at')
+        
+        if (performanceData) {
+          // Card 1: Prospects = people who clicked to website
+          totalProspects = performanceData.reduce((sum, post) => sum + (post.website_clicks || 0), 0)
+          
+          // Card 2: Posts Published = count of posts that were published
+          emailsSent = performanceData.filter(post => post.posted_at !== null).length
+          
+          // Card 3: Engagement = LinkedIn platform engagement (likes + comments + shares)
+          replies = performanceData.reduce((sum, post) => 
+            sum + (post.likes || 0) + (post.comments || 0) + (post.shares || 0), 0)
+          
+          // Card 4: Demos = sum from performance table
+          demos = performanceData.reduce((sum, post) => sum + (post.demos_booked || 0), 0)
+          
+          // Card 5: Clients = sum from performance table
+          clients = performanceData.reduce((sum, post) => sum + (post.clients_closed || 0), 0)
+        }
 
-      const { count: replies } = await (
-        sourceFilter === 'all'
-          ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('replied', true)
-          : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('replied', true).ilike('source', `${sourceFilter}%`)
-      )
+      } else {
+        // Standard metrics from prospects table for all other sources
+        const { count: totalProspectsCount } = await (
+          sourceFilter === 'all' 
+            ? supabase.from('prospects').select('*', { count: 'exact', head: true })
+            : supabase.from('prospects').select('*', { count: 'exact', head: true }).ilike('source', `${sourceFilter}%`)
+        )
 
-      const { count: demos } = await (
-        sourceFilter === 'all'
-          ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('demo_booked', true)
-          : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('demo_booked', true).ilike('source', `${sourceFilter}%`)
-      )
+        const { count: emailsSentCount } = await (
+          sourceFilter === 'all'
+            ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('email_sent', true)
+            : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('email_sent', true).ilike('source', `${sourceFilter}%`)
+        )
 
-      const { count: clients } = await (
-        sourceFilter === 'all'
-          ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true)
-          : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true).ilike('source', `${sourceFilter}%`)
-      )
+        const { count: repliesCount } = await (
+          sourceFilter === 'all'
+            ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('replied', true)
+            : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('replied', true).ilike('source', `${sourceFilter}%`)
+        )
+
+        const { count: demosCount } = await (
+          sourceFilter === 'all'
+            ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('demo_booked', true)
+            : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('demo_booked', true).ilike('source', `${sourceFilter}%`)
+        )
+
+        const { count: clientsCount } = await (
+          sourceFilter === 'all'
+            ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true)
+            : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true).ilike('source', `${sourceFilter}%`)
+        )
+
+        totalProspects = totalProspectsCount || 0
+        emailsSent = emailsSentCount || 0
+        replies = repliesCount || 0
+        demos = demosCount || 0
+        clients = clientsCount || 0
+      }
 
       const emailToReplyRate = emailsSent && replies ? (replies / emailsSent) * 100 : 0
       const replyToDemoRate = replies && demos ? (demos / replies) * 100 : 0
       const demoToClientRate = demos && clients ? (clients / demos) * 100 : 0
 
       setMetrics({
-        total_prospects: totalProspects || 0,
-        emails_sent: emailsSent || 0,
-        replies: replies || 0,
-        demos_booked: demos || 0,
-        clients_closed: clients || 0,
+        total_prospects: totalProspects,
+        emails_sent: emailsSent,
+        replies: replies,
+        demos_booked: demos,
+        clients_closed: clients,
         email_to_reply_rate: emailToReplyRate,
         reply_to_demo_rate: replyToDemoRate,
         demo_to_client_rate: demoToClientRate,
@@ -165,7 +214,7 @@ export default function MarketingTab() {
       const { data, error } = await supabase
         .from('linkedin_post_performance')
         .select('*')
-        .order('clicks', { ascending: false })
+        .order('website_clicks', { ascending: false })
         .limit(10)
 
       if (error) throw error
@@ -341,6 +390,64 @@ export default function MarketingTab() {
         </div>
       </div>
 
+      {/* LinkedIn Post Performance Table */}
+      {sourceFilter === 'linkedin' && linkedinPosts.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">💼 Top Performing LinkedIn Posts</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impressions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website Clicks</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prospects</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Demos</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clients</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {linkedinPosts.map((post) => (
+                  <tr key={post.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 max-w-xs truncate">{post.topic}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(post.post_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{post.impressions?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {((post.likes || 0) + (post.comments || 0) + (post.shares || 0)).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">{post.website_clicks?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">{post.prospects_generated?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-medium">{post.demos_booked?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 font-medium">{post.clients_closed?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${post.revenue_generated?.toLocaleString() || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {post.linkedin_url ? (
+                        <a
+                          href={post.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          View Post
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">No link</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Overview Cards with Expandable Prospect Lists */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {/* Total Prospects Card */}
@@ -412,7 +519,14 @@ export default function MarketingTab() {
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-500">Emails Sent</div>
+                <div className="text-sm font-medium text-gray-500">
+                  {sourceFilter === 'email' ? 'Emails Sent' :
+                   sourceFilter === 'linkedin' ? 'Posts Published' :
+                   sourceFilter === 'tiktok' ? 'TikTok Videos' :
+                   sourceFilter === 'instagram' ? 'IG Posts' :
+                   sourceFilter === 'twitter' ? 'Tweets Sent' :
+                   'Outreach Sent'}
+                </div>
                 <div className="text-3xl font-bold text-blue-600 mt-2">
                   {metrics?.emails_sent || 0}
                 </div>
@@ -478,12 +592,19 @@ export default function MarketingTab() {
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-500">Replies</div>
+                <div className="text-sm font-medium text-gray-500">
+                  {sourceFilter === 'email' ? 'Email Replies' :
+                   sourceFilter === 'linkedin' ? 'Total Engagement' :
+                   sourceFilter === 'tiktok' ? 'TikTok Engagement' :
+                   sourceFilter === 'instagram' ? 'IG Engagement' :
+                   sourceFilter === 'twitter' ? 'Tweet Replies' :
+                   'Replies'}
+                </div>
                 <div className="text-3xl font-bold text-green-600 mt-2">
                   {metrics?.replies || 0}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {metrics?.email_to_reply_rate.toFixed(1)}% reply rate
+                  {metrics?.email_to_reply_rate.toFixed(1)}% {sourceFilter === 'linkedin' ? 'engagement rate' : 'reply rate'}
                 </div>
               </div>
               <svg className={`w-5 h-5 text-gray-400 transition-transform ${expandedSection === 'replies' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -542,12 +663,20 @@ export default function MarketingTab() {
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-500">Demos Booked</div>
+                <div className="text-sm font-medium text-gray-500">
+                  {sourceFilter === 'linkedin' ? 'LinkedIn Demos' :
+                   sourceFilter === 'tiktok' ? 'TikTok Demos' :
+                   sourceFilter === 'instagram' ? 'IG Demos' :
+                   sourceFilter === 'twitter' ? 'Twitter Demos' :
+                   sourceFilter === 'referral' ? 'Referral Demos' :
+                   sourceFilter === 'website' ? 'Website Demos' :
+                   'Demos Booked'}
+                </div>
                 <div className="text-3xl font-bold text-purple-600 mt-2">
                   {metrics?.demos_booked || 0}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {metrics?.reply_to_demo_rate.toFixed(1)}% of replies
+                  {metrics?.reply_to_demo_rate.toFixed(1)}% of {sourceFilter === 'linkedin' ? 'engagement' : 'replies'}
                 </div>
               </div>
               <svg className={`w-5 h-5 text-gray-400 transition-transform ${expandedSection === 'demos' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -604,7 +733,16 @@ export default function MarketingTab() {
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-500">Clients Closed</div>
+                <div className="text-sm font-medium text-gray-500">
+                  {sourceFilter === 'linkedin' ? 'LinkedIn Clients' :
+                   sourceFilter === 'tiktok' ? 'TikTok Clients' :
+                   sourceFilter === 'instagram' ? 'IG Clients' :
+                   sourceFilter === 'twitter' ? 'Twitter Clients' :
+                   sourceFilter === 'email' ? 'Email Clients' :
+                   sourceFilter === 'referral' ? 'Referral Clients' :
+                   sourceFilter === 'website' ? 'Website Clients' :
+                   'Clients Closed'}
+                </div>
                 <div className="text-3xl font-bold text-indigo-600 mt-2">
                   {metrics?.clients_closed || 0}
                 </div>
