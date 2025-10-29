@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: 'I AM CFO - Real-Time Financial Intelligence',
   description: 'AI-powered dashboards for businesses doing $2M-$25M in revenue. See exactly where every dollar goes with real-time QuickBooks sync.',
   keywords: ['CFO', 'financial intelligence', 'QuickBooks', 'cash flow', 'property P&L', 'multi-unit business'],
+  icons: {
+    icon: '/images/Favicon.png',
+  },
 }
 
 export default function RootLayout({
