@@ -85,7 +85,7 @@ export function HeroSection() {
                 <iframe
                   width="100%"
                   height="100%"
-                  src="https://www.youtube.com/embed/ZLEk7ybKMwk"
+                  src="youtube.com/watch?v=ZLEk7ybKMwk&feature=youtu.be"
                   title="I AM CFO Demo"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
