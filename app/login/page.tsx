@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   async function handleLogin(e: React.FormEvent) {
@@ -58,18 +59,40 @@ export default function LoginPage() {
 
       const subdomain = (userData as any)?.organizations?.subdomain
       const role = userData?.role
+      const adminEmails = ['gpober@iamcfo.com']
+      const isSuperAdmin = role === 'super_admin' || adminEmails.includes(email)
 
-      // Step 3: Redirect based on role
-      if (role === 'super_admin') {
-        // Super admin - go to admin panel
-        router.push('/admin')
-      } else if (subdomain) {
-        // Get the session to pass it to the subdomain
+      // ✅ NEW: Check for returnTo parameter (from client subdomain redirect)
+      const returnTo = searchParams.get('returnTo')
+
+      if (returnTo && isSuperAdmin) {
+        // Super admin accessing a client subdomain
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.access_token && session?.refresh_token) {
-          // Pass the session tokens as URL hash parameters
-          // This allows the client site to pick up the session
+          const params = new URLSearchParams({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at?.toString() || '',
+            token_type: 'bearer',
+            super_admin: 'true', // Flag for client subdomain to recognize super admin
+          })
+          
+          // Return to the client subdomain they were trying to access
+          window.location.href = `${returnTo}#${params.toString()}`
+          return
+        }
+      }
+
+      // Step 3: Redirect based on role (existing logic)
+      if (isSuperAdmin) {
+        // Super admin - go to admin panel
+        router.push('/admin')
+      } else if (subdomain) {
+        // Regular user - redirect to their organization's subdomain
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session?.access_token && session?.refresh_token) {
           const params = new URLSearchParams({
             access_token: session.access_token,
             refresh_token: session.refresh_token,
