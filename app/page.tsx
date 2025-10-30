@@ -8,24 +8,20 @@ import { TestimonialsSection } from "@/components/landing/testimonials-section"
 import { PricingSection } from "@/components/landing/pricing-section"
 import { CTASection } from "@/components/landing/cta-section"
 import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <>
       <Header />
-      <main>
-        <HeroSection />
-        <ProblemSection />
-        <SolutionSection />
-        <ComparisonSection /> {/* ✅ NEW - Your ace in the hole */}
-        <IndustriesSection />
-        <DemoSection />
-        <TestimonialsSection />
-        <PricingSection />
-        <CTASection />
-      </main>
-      <Footer />
-    </div>
+      <HeroSection />
+      <ProblemSection />
+      <SolutionSection />
+      <ComparisonSection /> {/* ✅ NEW - Your ace in the hole */}
+      <IndustriesSection />
+      <DemoSection />
+      <TestimonialsSection />
+      <PricingSection />
+      <CTASection />
+    </>
   )
 }
