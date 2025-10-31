@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { TrendingUp, Send, MessageSquare, Calendar, DollarSign, Search, Filter } from 'lucide-react'
+import { TrendingUp, Send, MessageSquare, Calendar, DollarSign, Search, Filter, ChevronDown } from 'lucide-react'
 
 interface MarketingMetrics {
   total_prospects: number
@@ -41,6 +41,17 @@ type SourceFilter = 'all' | 'email' | 'linkedin' | 'tiktok' | 'instagram' | 'twi
 
 const PROSPECTS_PER_PAGE = 20
 
+const SOURCE_LABELS: Record<SourceFilter, string> = {
+  all: 'All Sources',
+  email: 'Email',
+  linkedin: 'LinkedIn',
+  tiktok: 'TikTok',
+  instagram: 'Instagram',
+  twitter: 'Twitter',
+  referral: 'Referrals',
+  website: 'Website'
+}
+
 export default function MobileMarketingTab() {
   const [metrics, setMetrics] = useState<MarketingMetrics | null>(null)
   const [prospects, setProspects] = useState<Prospect[]>([])
@@ -55,16 +66,20 @@ export default function MobileMarketingTab() {
   const [showFilters, setShowFilters] = useState(false)
   
   const supabase = createClient()
+  const totalPages = Math.ceil(totalProspects / PROSPECTS_PER_PAGE)
 
+  // Fetch metrics when filter changes
   useEffect(() => {
     fetchMetrics()
   }, [sourceFilter])
 
+  // Reset to page 1 and fetch when filter/search changes
   useEffect(() => {
     setCurrentPage(1)
     fetchProspects(1)
   }, [sourceFilter, searchQuery])
 
+  // Fetch prospects when page changes
   useEffect(() => {
     fetchProspects(currentPage)
   }, [currentPage])
@@ -91,35 +106,23 @@ export default function MobileMarketingTab() {
           clients = performanceData.reduce((sum, post) => sum + (post.clients_closed || 0), 0)
         }
       } else {
-        const { count: totalCount } = await (
-          sourceFilter === 'all' 
-            ? supabase.from('prospects').select('*', { count: 'exact', head: true })
-            : supabase.from('prospects').select('*', { count: 'exact', head: true }).ilike('source', `${sourceFilter}%`)
-        )
+        // Build queries with optional source filter
+        const buildQuery = (baseQuery: any) => 
+          sourceFilter === 'all' ? baseQuery : baseQuery.ilike('source', `${sourceFilter}%`)
 
-        const { count: emailsSentCount } = await (
-          sourceFilter === 'all'
-            ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('email_sent', true)
-            : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('email_sent', true).ilike('source', `${sourceFilter}%`)
-        )
-
-        const { count: repliesCount } = await (
-          sourceFilter === 'all'
-            ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('replied', true)
-            : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('replied', true).ilike('source', `${sourceFilter}%`)
-        )
-
-        const { count: demosCount } = await (
-          sourceFilter === 'all'
-            ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('demo_booked', true)
-            : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('demo_booked', true).ilike('source', `${sourceFilter}%`)
-        )
-
-        const { count: clientsCount } = await (
-          sourceFilter === 'all'
-            ? supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true)
-            : supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true).ilike('source', `${sourceFilter}%`)
-        )
+        const [
+          { count: totalCount },
+          { count: emailsSentCount },
+          { count: repliesCount },
+          { count: demosCount },
+          { count: clientsCount }
+        ] = await Promise.all([
+          buildQuery(supabase.from('prospects').select('*', { count: 'exact', head: true })),
+          buildQuery(supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('email_sent', true)),
+          buildQuery(supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('replied', true)),
+          buildQuery(supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('demo_booked', true)),
+          buildQuery(supabase.from('prospects').select('*', { count: 'exact', head: true }).eq('became_client', true))
+        ])
 
         totalProspectsCount = totalCount || 0
         emailsSent = emailsSentCount || 0
@@ -135,7 +138,7 @@ export default function MobileMarketingTab() {
       setMetrics({
         total_prospects: totalProspectsCount,
         emails_sent: emailsSent,
-        replies: replies,
+        replies,
         demos_booked: demos,
         clients_closed: clients,
         email_to_reply_rate: emailToReplyRate,
@@ -197,26 +200,16 @@ export default function MobileMarketingTab() {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer iamcfo_campaign_secret_2024_xyz789'
         },
-        body: JSON.stringify({ 
-          specific_email: email 
-        })
+        body: JSON.stringify({ specific_email: email })
       })
 
       const data = await response.json()
 
       if (response.ok && data.sent >= 1) {
-        setEmailResult({ 
-          email, 
-          success: true, 
-          message: 'Email sent!' 
-        })
-        
+        setEmailResult({ email, success: true, message: 'Email sent!' })
         fetchMetrics()
         fetchProspects(currentPage)
-        
-        setTimeout(() => {
-          setEmailResult(null)
-        }, 3000)
+        setTimeout(() => setEmailResult(null), 3000)
       } else {
         setEmailResult({ 
           email, 
@@ -225,135 +218,102 @@ export default function MobileMarketingTab() {
         })
       }
     } catch (error) {
-      setEmailResult({ 
-        email, 
-        success: false, 
-        message: 'Error sending email' 
-      })
+      setEmailResult({ email, success: false, message: 'Error sending email' })
     } finally {
       setSendingEmail(null)
     }
   }
-
-  function getSourceLabel(source: SourceFilter) {
-    const labels: Record<SourceFilter, string> = {
-      all: 'All Sources',
-      email: 'Email',
-      linkedin: 'LinkedIn',
-      tiktok: 'TikTok',
-      instagram: 'Instagram',
-      twitter: 'Twitter',
-      referral: 'Referrals',
-      website: 'Website'
-    }
-    return labels[source]
-  }
-
-  const totalPages = Math.ceil(totalProspects / PROSPECTS_PER_PAGE)
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <div className="text-gray-500 text-sm">Loading...</div>
+          <div className="text-gray-500 text-sm">Loading marketing data...</div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      {/* Metrics Cards */}
+    <div className="space-y-4 pb-6">
+      {/* Metrics Grid */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-500">Prospects</span>
-          </div>
-          <div className="text-2xl font-bold text-gray-900">{metrics?.total_prospects || 0}</div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <Send className="w-4 h-4 text-blue-400" />
-            <span className="text-xs text-gray-500">Sent</span>
-          </div>
-          <div className="text-2xl font-bold text-blue-600">{metrics?.emails_sent || 0}</div>
-          <div className="text-xs text-gray-400 mt-1">
-            {metrics?.total_prospects ? 
-              `${((metrics.emails_sent / metrics.total_prospects) * 100).toFixed(0)}%` 
-              : '0%'}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <MessageSquare className="w-4 h-4 text-green-400" />
-            <span className="text-xs text-gray-500">Replies</span>
-          </div>
-          <div className="text-2xl font-bold text-green-600">{metrics?.replies || 0}</div>
-          <div className="text-xs text-gray-400 mt-1">
-            {metrics?.email_to_reply_rate.toFixed(1)}% rate
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <Calendar className="w-4 h-4 text-purple-400" />
-            <span className="text-xs text-gray-500">Demos</span>
-          </div>
-          <div className="text-2xl font-bold text-purple-600">{metrics?.demos_booked || 0}</div>
-          <div className="text-xs text-gray-400 mt-1">
-            {metrics?.reply_to_demo_rate.toFixed(1)}% rate
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-4 col-span-2">
-          <div className="flex items-center space-x-2 mb-2">
-            <DollarSign className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs text-gray-500">Clients Closed</span>
-          </div>
-          <div className="text-3xl font-bold text-indigo-600">{metrics?.clients_closed || 0}</div>
-          <div className="text-xs text-gray-400 mt-1">
-            {metrics?.demo_to_client_rate.toFixed(1)}% close rate
-          </div>
+        <MetricCard
+          icon={<TrendingUp className="w-4 h-4 text-gray-400" />}
+          label="Prospects"
+          value={metrics?.total_prospects || 0}
+          color="gray"
+        />
+        <MetricCard
+          icon={<Send className="w-4 h-4 text-blue-400" />}
+          label="Sent"
+          value={metrics?.emails_sent || 0}
+          subtitle={metrics?.total_prospects ? 
+            `${((metrics.emails_sent / metrics.total_prospects) * 100).toFixed(0)}%` 
+            : '0%'}
+          color="blue"
+        />
+        <MetricCard
+          icon={<MessageSquare className="w-4 h-4 text-green-400" />}
+          label="Replies"
+          value={metrics?.replies || 0}
+          subtitle={`${metrics?.email_to_reply_rate.toFixed(1)}% rate`}
+          color="green"
+        />
+        <MetricCard
+          icon={<Calendar className="w-4 h-4 text-purple-400" />}
+          label="Demos"
+          value={metrics?.demos_booked || 0}
+          subtitle={`${metrics?.reply_to_demo_rate.toFixed(1)}% rate`}
+          color="purple"
+        />
+        <div className="col-span-2">
+          <MetricCard
+            icon={<DollarSign className="w-4 h-4 text-indigo-400" />}
+            label="Clients Closed"
+            value={metrics?.clients_closed || 0}
+            subtitle={`${metrics?.demo_to_client_rate.toFixed(1)}% close rate`}
+            color="indigo"
+            large
+          />
         </div>
       </div>
 
       {/* Filter Button */}
       <button
         onClick={() => setShowFilters(!showFilters)}
-        className="w-full bg-white rounded-xl shadow-sm p-4 flex items-center justify-between"
+        className="w-full bg-white rounded-xl shadow-sm p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-400" />
           <span className="text-sm font-medium text-gray-700">
-            Filter: {getSourceLabel(sourceFilter)}
+            {SOURCE_LABELS[sourceFilter]}
           </span>
         </div>
-        <span className="text-xs text-gray-500">
-          {totalProspects} prospects
-        </span>
+        <div className="flex items-center space-x-2">
+          <span className="text-xs text-gray-500">{totalProspects} prospects</span>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+        </div>
       </button>
 
       {/* Filter Dropdown */}
       {showFilters && (
-        <div className="bg-white rounded-xl shadow-sm p-4 space-y-2">
-          {(['all', 'email', 'linkedin', 'tiktok', 'instagram', 'twitter', 'referral', 'website'] as SourceFilter[]).map((source) => (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          {(Object.keys(SOURCE_LABELS) as SourceFilter[]).map((source) => (
             <button
               key={source}
               onClick={() => {
                 setSourceFilter(source)
                 setShowFilters(false)
               }}
-              className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full text-left px-4 py-3 transition-colors border-b border-gray-100 last:border-0 ${
                 sourceFilter === source
                   ? 'bg-blue-50 text-blue-700 font-medium'
                   : 'hover:bg-gray-50 text-gray-700'
               }`}
             >
-              {getSourceLabel(source)}
+              {SOURCE_LABELS[source]}
             </button>
           ))}
         </div>
@@ -362,157 +322,227 @@ export default function MobileMarketingTab() {
       {/* Search Bar */}
       <div className="bg-white rounded-xl shadow-sm p-4">
         <div className="relative">
-          <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search prospects..."
+            placeholder="Search by name, email, or company..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="mt-2 text-xs text-blue-600"
+            className="mt-2 text-xs text-blue-600 font-medium"
           >
             Clear search
           </button>
         )}
       </div>
 
-      {/* Prospects List */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
+      {/* Prospects List Header */}
+      <div className="flex items-center justify-between px-1">
+        <span className="text-xs text-gray-500 font-medium">
+          {loadingProspects ? 'Loading...' : `${prospects.length} of ${totalProspects} prospects`}
+        </span>
+        {totalPages > 1 && (
           <span className="text-xs text-gray-500">
-            {loadingProspects ? 'Loading...' : `${prospects.length} prospects`}
+            Page {currentPage} of {totalPages}
           </span>
-          {totalPages > 1 && (
-            <span className="text-xs text-gray-500">
-              Page {currentPage} of {totalPages}
-            </span>
-          )}
-        </div>
-
-        {loadingProspects ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : prospects.length > 0 ? (
-          <>
-            {prospects.map((prospect) => (
-              <div key={prospect.id} className="bg-white rounded-xl shadow-sm p-4 space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 truncate">
-                      {prospect.first_name || prospect.last_name ? 
-                        `${prospect.first_name || ''} ${prospect.last_name || ''}`.trim() : 
-                        'No name'
-                      }
-                    </h4>
-                    <p className="text-sm text-gray-600 truncate">{prospect.email}</p>
-                    {prospect.company && (
-                      <p className="text-xs text-gray-500 mt-1">{prospect.company}</p>
-                    )}
-                  </div>
-                  <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs whitespace-nowrap">
-                    {prospect.source}
-                  </span>
-                </div>
-
-                {/* Status Badges */}
-                <div className="flex flex-wrap gap-2">
-                  {prospect.became_client && (
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700">
-                      💰 Client
-                    </span>
-                  )}
-                  {prospect.demo_booked && !prospect.became_client && (
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-700">
-                      📅 Demo
-                    </span>
-                  )}
-                  {prospect.replied && !prospect.demo_booked && (
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
-                      💬 Replied
-                    </span>
-                  )}
-                  {prospect.email_sent && !prospect.replied && (
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
-                      ✉️ Sent
-                    </span>
-                  )}
-                  {!prospect.email_sent && (
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                      ⏳ Not Contacted
-                    </span>
-                  )}
-                </div>
-
-                {/* Action Button */}
-                <button
-                  onClick={() => sendEmailToProspect(prospect.email)}
-                  disabled={sendingEmail === prospect.email || prospect.email_sent}
-                  className={`w-full py-3 rounded-lg font-medium text-sm transition-colors ${
-                    prospect.email_sent
-                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                      : emailResult?.email === prospect.email && emailResult.success
-                      ? 'bg-green-100 text-green-700'
-                      : emailResult?.email === prospect.email && !emailResult.success
-                      ? 'bg-red-100 text-red-700'
-                      : sendingEmail === prospect.email
-                      ? 'bg-gray-200 text-gray-600 cursor-wait'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  {prospect.email_sent 
-                    ? '✓ Email Sent' 
-                    : sendingEmail === prospect.email 
-                    ? 'Sending...' 
-                    : emailResult?.email === prospect.email 
-                    ? (emailResult.success ? '✓ Sent!' : '✗ Failed') 
-                    : '📧 Send Email'}
-                </button>
-              </div>
-            ))}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white rounded-xl shadow-sm p-4 mt-4">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  ← Previous
-                </button>
-                <span className="text-sm text-gray-600">
-                  {currentPage} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next →
-                </button>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <p className="text-gray-500">No prospects found</p>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="mt-2 text-sm text-blue-600"
-              >
-                Clear search
-              </button>
-            )}
-          </div>
         )}
       </div>
+
+      {/* Prospects Cards */}
+      {loadingProspects ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
+            <p className="text-sm text-gray-500">Loading prospects...</p>
+          </div>
+        </div>
+      ) : prospects.length > 0 ? (
+        <div className="space-y-3">
+          {prospects.map((prospect) => (
+            <ProspectCard
+              key={prospect.id}
+              prospect={prospect}
+              onSendEmail={sendEmailToProspect}
+              sendingEmail={sendingEmail}
+              emailResult={emailResult}
+            />
+          ))}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between bg-white rounded-xl shadow-sm p-4 gap-4">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
+              >
+                ← Previous
+              </button>
+              <span className="text-sm font-medium text-gray-600 whitespace-nowrap">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+          <div className="text-gray-400 text-4xl mb-3">🔍</div>
+          <p className="text-gray-600 font-medium mb-1">No prospects found</p>
+          <p className="text-sm text-gray-500 mb-4">
+            {searchQuery ? 'Try a different search term' : 'No prospects match the current filter'}
+          </p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="text-sm text-blue-600 font-medium hover:text-blue-700"
+            >
+              Clear search
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
+
+// Metric Card Component
+function MetricCard({ 
+  icon, 
+  label, 
+  value, 
+  subtitle, 
+  color, 
+  large = false 
+}: { 
+  icon: React.ReactNode
+  label: string
+  value: number
+  subtitle?: string
+  color: 'gray' | 'blue' | 'green' | 'purple' | 'indigo'
+  large?: boolean
+}) {
+  const colorClasses = {
+    gray: 'text-gray-900',
+    blue: 'text-blue-600',
+    green: 'text-green-600',
+    purple: 'text-purple-600',
+    indigo: 'text-indigo-600'
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-4">
+      <div className="flex items-center space-x-2 mb-2">
+        {icon}
+        <span className="text-xs text-gray-500 font-medium">{label}</span>
+      </div>
+      <div className={`${large ? 'text-3xl' : 'text-2xl'} font-bold ${colorClasses[color]}`}>
+        {value}
+      </div>
+      {subtitle && (
+        <div className="text-xs text-gray-500 mt-1">{subtitle}</div>
+      )}
+    </div>
+  )
+}
+
+// Prospect Card Component
+function ProspectCard({ 
+  prospect, 
+  onSendEmail, 
+  sendingEmail, 
+  emailResult 
+}: { 
+  prospect: Prospect
+  onSendEmail: (email: string) => void
+  sendingEmail: string | null
+  emailResult: { email: string, success: boolean, message: string } | null
+}) {
+  const getProspectName = () => {
+    if (prospect.first_name || prospect.last_name) {
+      return `${prospect.first_name || ''} ${prospect.last_name || ''}`.trim()
+    }
+    return 'No name'
+  }
+
+  const getButtonState = () => {
+    if (prospect.email_sent) {
+      return { text: '✓ Email Sent', className: 'bg-gray-100 text-gray-500 cursor-not-allowed' }
+    }
+    if (sendingEmail === prospect.email) {
+      return { text: 'Sending...', className: 'bg-gray-200 text-gray-600 cursor-wait' }
+    }
+    if (emailResult?.email === prospect.email) {
+      if (emailResult.success) {
+        return { text: '✓ Sent!', className: 'bg-green-100 text-green-700' }
+      }
+      return { text: '✗ Failed', className: 'bg-red-100 text-red-700' }
+    }
+    return { text: '📧 Send Email', className: 'bg-blue-600 hover:bg-blue-700 text-white' }
+  }
+
+  const buttonState = getButtonState()
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-gray-900 truncate">
+            {getProspectName()}
+          </h4>
+          <p className="text-sm text-gray-600 truncate">{prospect.email}</p>
+          {prospect.company && (
+            <p className="text-xs text-gray-500 mt-1 truncate">{prospect.company}</p>
+          )}
+        </div>
+        <span className="flex-shrink-0 px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">
+          {prospect.source}
+        </span>
+      </div>
+
+      {/* Status Badges */}
+      <div className="flex flex-wrap gap-2">
+        {prospect.became_client && (
+          <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700">
+            💰 Client
+          </span>
+        )}
+        {prospect.demo_booked && !prospect.became_client && (
+          <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-700">
+            📅 Demo
+          </span>
+        )}
+        {prospect.replied && !prospect.demo_booked && (
+          <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
+            💬 Replied
+          </span>
+        )}
+        {prospect.email_sent && !prospect.replied && (
+          <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
+            ✉️ Sent
+          </span>
+        )}
+        {!prospect.email_sent && (
+          <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
+            ⏳ Not Contacted
+          </span>
+        )}
+      </div>
+
+      {/* Action Button */}
+      <button
+        onClick={() => onSendEmail(prospect.email)}
+        disabled={sendingEmail === prospect.email || prospect.email_sent}
+        className={`w-full py-3 rounded-lg font-medium text-sm transition-colors ${buttonState.className}`}
+      >
