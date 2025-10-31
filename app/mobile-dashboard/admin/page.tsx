@@ -271,15 +271,41 @@ export default function MobileAdminPage() {
                     )}
 
                     {org.subdomain && (
-                      <a
-                        href={`https://${org.subdomain}.iamcfo.com`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                      <button
+                        onClick={async () => {
+                          try {
+                            // Get current session
+                            const { data: { session } } = await supabase.auth.getSession()
+                            
+                            if (!session) {
+                              alert('No active session. Please log in again.')
+                              return
+                            }
+
+                            // Build URL with tokens in hash for session transfer
+                            const targetUrl = new URL(`https://${org.subdomain}.iamcfo.com/mobile-dashboard`)
+                            const hash = new URLSearchParams({
+                              access_token: session.access_token,
+                              refresh_token: session.refresh_token,
+                              super_admin: 'true'
+                            }).toString()
+                            
+                            targetUrl.hash = hash
+                            
+                            console.log('🚀 Redirecting super admin to:', targetUrl.href)
+                            
+                            // Open in same window to maintain mobile experience
+                            window.location.href = targetUrl.href
+                          } catch (error) {
+                            console.error('Error transferring session:', error)
+                            alert('Failed to open dashboard. Please try again.')
+                          }
+                        }}
+                        className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors active:bg-blue-800"
                       >
                         Open Dashboard
                         <ExternalLink className="w-4 h-4" />
-                      </a>
+                      </button>
                     )}
                   </div>
                 )}
