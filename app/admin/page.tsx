@@ -250,14 +250,32 @@ export default function AdminPanel() {
                         <div className="text-sm font-medium text-gray-900">{org.name}</div>
                         <div className="text-sm text-gray-500">{org.slug}</div>
                         {org.subdomain && (
-                          <a
-                            href={`https://${org.subdomain}.iamcfo.com`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:underline"
+                          <button
+                            onClick={async () => {
+                              // Get current session
+                              const { data: { session } } = await supabase.auth.getSession()
+                              
+                              if (!session?.access_token || !session?.refresh_token) {
+                                alert('No session found. Please log in again.')
+                                return
+                              }
+
+                              // Create URL with session tokens
+                              const params = new URLSearchParams({
+                                access_token: session.access_token,
+                                refresh_token: session.refresh_token,
+                                expires_at: session.expires_at?.toString() || '',
+                                token_type: 'bearer',
+                                super_admin: 'true',
+                              })
+
+                              // Redirect to client subdomain with tokens in hash
+                              window.location.href = `https://${org.subdomain}.iamcfo.com/dashboard#${params.toString()}`
+                            }}
+                            className="text-xs text-blue-600 hover:underline cursor-pointer"
                           >
-                            {org.subdomain}.iamcfo.com
-                          </a>
+                            🔓 Access {org.subdomain}.iamcfo.com
+                          </button>
                         )}
                       </div>
                     </td>
