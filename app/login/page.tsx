@@ -85,10 +85,19 @@ function LoginForm() {
         }
       }
 
-      // Step 3: Redirect based on role (existing logic)
+      // Step 3: Redirect based on role - WITH MOBILE DETECTION
       if (isSuperAdmin) {
-        // Super admin - go to admin panel
-        router.push('/admin')
+        // Detect if mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        
+        // Super admin - go to appropriate admin panel
+        if (isMobile) {
+          console.log('🔐 Super admin (mobile) - redirecting to /mobile-dashboard/admin')
+          router.push('/mobile-dashboard/admin')
+        } else {
+          console.log('🔐 Super admin (desktop) - redirecting to /admin')
+          router.push('/admin')
+        }
       } else if (subdomain) {
         // Regular user - redirect to their organization's subdomain
         const { data: { session } } = await supabase.auth.getSession()
