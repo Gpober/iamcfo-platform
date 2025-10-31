@@ -546,3 +546,8 @@ function ProspectCard({
         disabled={sendingEmail === prospect.email || prospect.email_sent}
         className={`w-full py-3 rounded-lg font-medium text-sm transition-colors ${buttonState.className}`}
       >
+{buttonState.text}
+      </button>
+    </div>
+  )
+}
