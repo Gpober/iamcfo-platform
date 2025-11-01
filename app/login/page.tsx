@@ -100,8 +100,11 @@ function LoginForm() {
         }
       } else if (subdomain) {
         // Regular user - redirect to their organization's subdomain
+        const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        const destinationPath = isMobileDevice ? 'mobile-dashboard' : 'dashboard'
+
         const { data: { session } } = await supabase.auth.getSession()
-        
+
         if (session?.access_token && session?.refresh_token) {
           const params = new URLSearchParams({
             access_token: session.access_token,
@@ -109,12 +112,12 @@ function LoginForm() {
             expires_at: session.expires_at?.toString() || '',
             token_type: 'bearer',
           })
-          
+
           // Redirect with session in URL hash
-          window.location.href = `https://${subdomain}.iamcfo.com/dashboard#${params.toString()}`
+          window.location.href = `https://${subdomain}.iamcfo.com/${destinationPath}#${params.toString()}`
         } else {
           // Fallback if session tokens not available
-          window.location.href = `https://${subdomain}.iamcfo.com/dashboard`
+          window.location.href = `https://${subdomain}.iamcfo.com/${destinationPath}`
         }
       } else {
         // User has no organization - shouldn't happen, but handle it

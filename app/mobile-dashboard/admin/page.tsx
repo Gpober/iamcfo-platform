@@ -70,7 +70,7 @@ export default function MobileAdminPage() {
 
     if (!ADMIN_ROLES.includes(profile?.role || '')) {
       alert('Access denied. Admin access required.')
-      router.push('/')
+      router.push('/mobile-dashboard')
       return
     }
 
