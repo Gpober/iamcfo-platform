@@ -29,6 +29,8 @@ interface User {
 
 type TabType = 'orgs' | 'users' | 'marketing'
 
+const ADMIN_ROLES = ['super_admin', 'admin']
+
 export default function MobileAdminPage() {
   const [activeTab, setActiveTab] = useState<TabType>('orgs')
   const [organizations, setOrganizations] = useState<Organization[]>([])
@@ -66,12 +68,12 @@ export default function MobileAdminPage() {
       .eq('id', session.user.id)
       .single()
 
-    if (profile?.role !== 'super_admin') {
-      alert('Access denied. Super admin only.')
+    if (!ADMIN_ROLES.includes(profile?.role || '')) {
+      alert('Access denied. Admin access required.')
       router.push('/')
       return
     }
-    
+
     setIsAdmin(true)
     setLoading(false)
   }
