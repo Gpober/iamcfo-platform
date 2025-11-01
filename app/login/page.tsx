@@ -61,7 +61,10 @@ function LoginForm() {
       const subdomain = (userData as any)?.organizations?.subdomain
       const role = userData?.role
       const adminEmails = ['gpober@iamcfo.com']
-      const isSuperAdmin = role === 'super_admin' || adminEmails.includes(email)
+      const normalizedRole = (role || '').toLowerCase()
+      const adminRoles = ['super_admin', 'admin']
+      const isSuperAdmin = normalizedRole === 'super_admin' || adminEmails.includes(email)
+      const isOrgAdmin = adminRoles.includes(normalizedRole)
 
       // ✅ Check for returnTo parameter (from client subdomain redirect)
       const returnTo = searchParams.get('returnTo')
@@ -101,7 +104,11 @@ function LoginForm() {
       } else if (subdomain) {
         // Regular user - redirect to their organization's subdomain
         const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-        const destinationPath = isMobileDevice ? 'mobile-dashboard' : 'dashboard'
+        const destinationPath = isOrgAdmin
+          ? isMobileDevice
+            ? 'mobile-dashboard'
+            : 'dashboard'
+          : 'mobile-dashboard'
 
         const { data: { session } } = await supabase.auth.getSession()
 
